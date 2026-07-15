@@ -1,4 +1,3 @@
-
 // React
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -9,9 +8,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 // API
 import { login, register, getProfile, logout as authLogout } from "../api/auth";
 
-
 export const useAuth = () => {
-
   // Navigation
   const navigate = useNavigate();
 
@@ -36,29 +33,34 @@ export const useAuth = () => {
       queryClient.invalidateQueries(["profile"]);
       navigate("/dashboard");
     } catch (err) {
-      setError(err.response?.data?.message || err.message);
-      console.error(
-        "Login failed:",
-        err.response?.data?.message || err.message,
-      );
+      const errorMessage = err.response?.data?.message || err.message;
+      setError(errorMessage);
+      console.error("Login failed:", errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  // Register function
+  // Register function - Auto-login after registration
   const handleRegister = async (name, email, password) => {
     setLoading(true);
     setError(null);
     try {
+      // Step 1: Register the user
       await register(name, email, password);
-      navigate("/login");
+
+      // Step 2: Auto-login with the same credentials
+      const loginData = await login(email, password);
+      localStorage.setItem("token", loginData.token);
+      localStorage.setItem("user", JSON.stringify(loginData.user));
+      queryClient.invalidateQueries(["profile"]);
+
+      // Step 3: Redirect to dashboard
+      navigate("/dashboard");
     } catch (err) {
-      setError(err.response?.data?.message || err.message);
-      console.error(
-        "Registration failed:",
-        err.response?.data?.message || err.message,
-      );
+      const errorMessage = err.response?.data?.message || err.message;
+      setError(errorMessage);
+      console.error("Registration failed:", errorMessage);
     } finally {
       setLoading(false);
     }

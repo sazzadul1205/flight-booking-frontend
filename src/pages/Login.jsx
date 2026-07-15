@@ -4,15 +4,15 @@ import { useAuth } from '../hooks/useAuth';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, loginLoading, loginError } = useAuth();
+  const { login, loading, error } = useAuth();  // <-- Changed to loading, error
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {  // <-- Made async
     e.preventDefault();
     if (!email || !password) {
       alert('Please fill in all fields');
       return;
     }
-    login({ email, password });
+    await login(email, password);  // <-- Changed to pass email, password directly
   };
 
   return (
@@ -51,18 +51,18 @@ const Login = () => {
             />
           </div>
 
-          {loginError && (
+          {error && (
             <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
-              {loginError.response?.data?.message || 'Login failed. Please try again.'}
+              {error}
             </div>
           )}
 
           <button
             type="submit"
-            disabled={loginLoading}
+            disabled={loading}
             className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loginLoading ? 'Logging in...' : 'Login'}
+            {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
 

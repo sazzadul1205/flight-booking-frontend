@@ -7,13 +7,13 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const { register, loading, error } = useAuth();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {  // No need for async here
     e.preventDefault();
     if (!name || !email || !password) {
       alert('Please fill in all fields');
       return;
     }
-    await register(name, email, password);
+    register(name, email, password);  // Just call register
   };
 
   return (
