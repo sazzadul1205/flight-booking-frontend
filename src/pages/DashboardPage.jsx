@@ -4,21 +4,42 @@ const DashboardPage = () => {
   const { profile, profileLoading, logout } = useAuth();
 
   if (profileLoading) {
-    return <div>Loading profile...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-600">Loading profile...</div>
+      </div>
+    );
   }
 
   return (
-    <div className="page">
-      <div className="dashboard-container">
-        <h1>Dashboard</h1>
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-md p-8 w-full max-w-md">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
+          <button
+            onClick={logout}
+            className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition duration-200 text-sm font-medium"
+          >
+            Logout
+          </button>
+        </div>
+
         {profile && (
-          <div className="profile-info">
-            <p><strong>Name:</strong> {profile.name}</p>
-            <p><strong>Email:</strong> {profile.email}</p>
-            <p><strong>ID:</strong> {profile.id}</p>
+          <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+            <p className="text-gray-700">
+              <span className="font-semibold">Name:</span>{' '}
+              <span className="text-gray-900">{profile.name}</span>
+            </p>
+            <p className="text-gray-700">
+              <span className="font-semibold">Email:</span>{' '}
+              <span className="text-gray-900">{profile.email}</span>
+            </p>
+            <p className="text-gray-700">
+              <span className="font-semibold">ID:</span>{' '}
+              <span className="text-gray-900">{profile.id}</span>
+            </p>
           </div>
         )}
-        <button onClick={logout}>Logout</button>
       </div>
     </div>
   );
