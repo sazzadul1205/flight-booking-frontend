@@ -1,3 +1,4 @@
+// api/flight.js
 import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -15,9 +16,30 @@ const authConfig = () => ({
 
 // Search flights
 export const searchFlights = async (searchParams) => {
+  // Ensure the field names match what the backend expects
+  const formattedParams = {
+    JourneyType: parseInt(searchParams.JourneyType) || 1,
+    Origin: searchParams.Origin?.toUpperCase().trim() || "",
+    Destination: searchParams.Destination?.toUpperCase().trim() || "",
+    DepartureDate: searchParams.DepartureDate || "",
+    ReturnDate: searchParams.ReturnDate || "",
+    ClassType: searchParams.ClassType || "Economy",
+    NoofAdult: parseInt(searchParams.NoofAdult) || 1,
+    NoofChildren: parseInt(searchParams.NoofChildren) || 0,
+    NoofInfant: parseInt(searchParams.NoofInfant) || 0,
+    IsSpecialTexRedumption: searchParams.IsSpecialTexRedumption || false,
+    IsFlexSearch: searchParams.IsFlexSearch || false,
+    Flex: searchParams.Flex ?? null, // Use null if not provided
+    ChildrenAges: Array.isArray(searchParams.ChildrenAges)
+      ? searchParams.ChildrenAges
+      : [],
+  };
+
+  console.log("Sending to API:", formattedParams);
+
   const response = await axios.post(
     `${API_URL}/flights/search`,
-    searchParams,
+    formattedParams,
     authConfig(),
   );
   return response.data;

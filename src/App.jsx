@@ -1,3 +1,4 @@
+// src/App.jsx
 import {
   BrowserRouter as Router,
   Routes,
@@ -6,16 +7,16 @@ import {
 } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import DashboardPage from "./pages/DashboardPage";
 import MarkupCommissionManagement from "./pages/MarkupCommissionManagement";
-import FlightSearch from "./pages/FlightSearch"; // Add this
+import FlightSearch from "./pages/FlightSearch";
+import Layout from "./Layout/Layout";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
   if (!token) {
     return <Navigate to="/login" replace />;
   }
-  return children;
+  return <Layout>{children}</Layout>;
 };
 
 const App = () => {
@@ -25,18 +26,10 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route
-          path="/Search"
+          path="/search"
           element={
             <ProtectedRoute>
               <FlightSearch />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
             </ProtectedRoute>
           }
         />
@@ -48,7 +41,7 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        <Route path="*" element={<Navigate to="/" />} />
+        <Route path="*" element={<Navigate to="/search" />} />
       </Routes>
     </Router>
   );

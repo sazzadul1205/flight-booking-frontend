@@ -1,70 +1,14 @@
+// pages/MarkupCommissionManagement.jsx
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
-
-const token = localStorage.getItem("token");
-
-// Axios config
-const axiosConfig = {
-  headers: { Authorization: `Bearer ${token}` },
-};
-
-// Fetch rules function
-const fetchRules = async () => {
-  const { data } = await axios.get(
-    `http://localhost:5000/api/config/lists`,
-    axiosConfig,
-  );
-  return data.data;
-};
-
-// Fetch airlines from external API
-const fetchAirlines = async () => {
-  const { data } = await axios.get(
-    `http://localhost:5000/api/airlines`,
-    axiosConfig,
-  );
-  return data.data || [];
-};
-
-// Create rule function
-const createRule = async (newRule) => {
-  const { data } = await axios.post(
-    "http://localhost:5000/api/config",
-    newRule,
-    axiosConfig,
-  );
-  return data;
-};
-
-// Update rule function
-const updateRule = async ({ id, ...updates }) => {
-  const { data } = await axios.put(
-    `http://localhost:5000/api/config/${id}`,
-    updates,
-    axiosConfig,
-  );
-  return data;
-};
-
-// Delete rule function
-const deleteRule = async (id) => {
-  const { data } = await axios.delete(
-    `http://localhost:5000/api/config/${id}`,
-    axiosConfig,
-  );
-  return data;
-};
-
-// Toggle rule function
-const toggleRule = async ({ id, is_active }) => {
-  const { data } = await axios.patch(
-    `http://localhost:5000/api/config/${id}/toggle`,
-    { is_active },
-    axiosConfig,
-  );
-  return data;
-};
+import {
+  getAllRules,
+  createRule,
+  updateRule,
+  deleteRule,
+  toggleRuleStatus,
+} from "../api/config";
+import { getAirlines } from "../api/flight";
 
 const MarkupCommissionManagement = () => {
   const [editingId, setEditingId] = useState(null);
@@ -77,40 +21,38 @@ const MarkupCommissionManagement = () => {
     is_active: true,
   });
 
-  // State for airline search
   const [airlineSearch, setAirlineSearch] = useState("");
   const [showAirlineDropdown, setShowAirlineDropdown] = useState(false);
   const [selectedAirline, setSelectedAirline] = useState(null);
 
   const queryClient = useQueryClient();
 
-  // Query for fetching rules
+  // ============ QUERIES ============
+
+  // Fetch rules using the API
   const {
-    data: rules = [],
+    data: rulesResponse,
     isLoading,
     isError,
     error,
   } = useQuery({
     queryKey: ["rules"],
-    queryFn: fetchRules,
+    queryFn: getAllRules,
   });
 
-  // Query for fetching airlines
-  const { data: airlines = [], isLoading: airlinesLoading } = useQuery({
+  // Extract the rules array from the response
+  const rules = rulesResponse?.data || [];
+
+  // Fetch airlines using the API
+  const { data: airlinesResponse, isLoading: airlinesLoading } = useQuery({
     queryKey: ["airlines"],
-    queryFn: fetchAirlines,
+    queryFn: getAirlines,
   });
 
-  // Filter airlines based on search
-  const filteredAirlines = airlines.filter((airline) => {
-    const searchLower = airlineSearch.toLowerCase();
-    return (
-      airline.Code.toLowerCase().includes(searchLower) ||
-      airline.AriLineName.toLowerCase().includes(searchLower)
-    );
-  });
+  const airlines = airlinesResponse?.data || [];
 
-  // Mutation for creating rule
+  // ============ MUTATIONS ============
+
   const createMutation = useMutation({
     mutationFn: createRule,
     onSuccess: () => {
@@ -123,9 +65,8 @@ const MarkupCommissionManagement = () => {
     },
   });
 
-  // Mutation for updating rule
   const updateMutation = useMutation({
-    mutationFn: updateRule,
+    mutationFn: ({ id, ...data }) => updateRule(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries(["rules"]);
       resetForm();
@@ -136,7 +77,6 @@ const MarkupCommissionManagement = () => {
     },
   });
 
-  // Mutation for deleting rule
   const deleteMutation = useMutation({
     mutationFn: deleteRule,
     onSuccess: () => {
@@ -148,9 +88,8 @@ const MarkupCommissionManagement = () => {
     },
   });
 
-  // Mutation for toggling rule
   const toggleMutation = useMutation({
-    mutationFn: toggleRule,
+    mutationFn: ({ id, is_active }) => toggleRuleStatus(id, is_active),
     onSuccess: () => {
       queryClient.invalidateQueries(["rules"]);
     },
@@ -159,7 +98,8 @@ const MarkupCommissionManagement = () => {
     },
   });
 
-  // Handle form input changes
+  // ============ HANDLERS ============
+
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
@@ -168,45 +108,30 @@ const MarkupCommissionManagement = () => {
     });
   };
 
-  // Handle airline search input
   const handleAirlineSearch = (e) => {
     const value = e.target.value;
     setAirlineSearch(value);
     setShowAirlineDropdown(true);
-
-    // If search is cleared, reset selected airline
     if (value === "") {
       setSelectedAirline(null);
-      setFormData({
-        ...formData,
-        airline_code: "",
-      });
+      setFormData({ ...formData, airline_code: "" });
     }
   };
 
-  // Select airline from dropdown
   const selectAirline = (airline) => {
     setSelectedAirline(airline);
     setAirlineSearch(airline.Code);
-    setFormData({
-      ...formData,
-      airline_code: airline.Code,
-    });
+    setFormData({ ...formData, airline_code: airline.Code });
     setShowAirlineDropdown(false);
   };
 
-  // Clear selected airline
   const clearAirline = () => {
     setSelectedAirline(null);
     setAirlineSearch("");
-    setFormData({
-      ...formData,
-      airline_code: "",
-    });
+    setFormData({ ...formData, airline_code: "" });
     setShowAirlineDropdown(false);
   };
 
-  // Reset form
   const resetForm = () => {
     setFormData({
       airline_code: "",
@@ -222,7 +147,6 @@ const MarkupCommissionManagement = () => {
     setShowAirlineDropdown(false);
   };
 
-  // Handle edit - populate form with rule data
   const handleEdit = (rule) => {
     setEditingId(rule.id);
     setFormData({
@@ -234,7 +158,6 @@ const MarkupCommissionManagement = () => {
       is_active: rule.is_active === 1 || rule.is_active === true,
     });
 
-    // If rule has airline code, find and set it
     if (rule.airline_code) {
       const found = airlines.find((a) => a.Code === rule.airline_code);
       if (found) {
@@ -245,19 +168,11 @@ const MarkupCommissionManagement = () => {
       setSelectedAirline(null);
       setAirlineSearch("");
     }
-
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Handle cancel edit
-  const handleCancelEdit = () => {
-    resetForm();
-  };
-
-  // Handle submit
   const handleSubmit = (e) => {
     e.preventDefault();
-
     const payload = {
       ...formData,
       markup_value: parseFloat(formData.markup_value),
@@ -272,35 +187,41 @@ const MarkupCommissionManagement = () => {
     }
   };
 
-  // Handle delete
   const handleDelete = (id) => {
     if (!window.confirm("Are you sure you want to delete this rule?")) return;
     deleteMutation.mutate(id);
   };
 
-  // Handle toggle
   const handleToggle = (id, currentStatus) => {
     toggleMutation.mutate({ id, is_active: !currentStatus });
   };
 
-  // Check if any mutation is loading
-  const isLoadingMutation =
-    createMutation.isLoading ||
-    updateMutation.isLoading ||
-    deleteMutation.isLoading ||
-    toggleMutation.isLoading;
-
-  // Get airline name from code
   const getAirlineName = (code) => {
     if (!code) return "🌍 Global";
     const airline = airlines.find((a) => a.Code === code);
     return airline ? `${code} - ${airline.AriLineName}` : code;
   };
 
+  const isLoadingMutation =
+    createMutation.isLoading ||
+    updateMutation.isLoading ||
+    deleteMutation.isLoading ||
+    toggleMutation.isLoading;
+
+  // Filter airlines based on search
+  const filteredAirlines = airlines.filter((airline) => {
+    const searchLower = airlineSearch.toLowerCase();
+    return (
+      airline.Code.toLowerCase().includes(searchLower) ||
+      airline.AriLineName.toLowerCase().includes(searchLower)
+    );
+  });
+
+  // ============ RENDER ============
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900">
             Markup & Commission Rules
@@ -310,7 +231,7 @@ const MarkupCommissionManagement = () => {
           </p>
         </div>
 
-        {/* Form - Always visible */}
+        {/* Form */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             {editingId ? "Edit Rule" : "Create New Rule"}
@@ -348,7 +269,6 @@ const MarkupCommissionManagement = () => {
                     )}
                   </div>
 
-                  {/* Airline Dropdown */}
                   {showAirlineDropdown && filteredAirlines.length > 0 && (
                     <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
                       {airlinesLoading ? (
@@ -357,7 +277,6 @@ const MarkupCommissionManagement = () => {
                         </div>
                       ) : (
                         <>
-                          {/* Global option */}
                           <div
                             onClick={() => {
                               clearAirline();
@@ -372,16 +291,14 @@ const MarkupCommissionManagement = () => {
                               Applies to all airlines
                             </div>
                           </div>
-
                           {filteredAirlines.slice(0, 20).map((airline) => (
                             <div
                               key={airline.ID}
                               onClick={() => selectAirline(airline)}
-                              className={`px-4 py-2 hover:bg-blue-50 cursor-pointer ${
-                                selectedAirline?.ID === airline.ID
-                                  ? "bg-blue-50"
-                                  : ""
-                              }`}
+                              className={`px-4 py-2 hover:bg-blue-50 cursor-pointer ${selectedAirline?.ID === airline.ID
+                                ? "bg-blue-50"
+                                : ""
+                                }`}
                             >
                               <div className="flex justify-between items-center">
                                 <span className="font-medium text-gray-800">
@@ -485,7 +402,6 @@ const MarkupCommissionManagement = () => {
               </div>
             </div>
 
-            {/* Form Buttons */}
             <div className="flex gap-3 mt-4">
               <button
                 type="submit"
@@ -498,16 +414,6 @@ const MarkupCommissionManagement = () => {
                     ? "Update Rule"
                     : "Create Rule"}
               </button>
-
-              {editingId && (
-                <button
-                  type="button"
-                  onClick={handleCancelEdit}
-                  className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
-                >
-                  Cancel
-                </button>
-              )}
             </div>
           </form>
         </div>
@@ -547,10 +453,7 @@ const MarkupCommissionManagement = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {rules.length === 0 ? (
                     <tr>
-                      <td
-                        colSpan="5"
-                        className="px-6 py-4 text-center text-gray-500"
-                      >
+                      <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
                         No rules found. Create your first rule above!
                       </td>
                     </tr>
@@ -592,11 +495,10 @@ const MarkupCommissionManagement = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
-                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              rule.is_active
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
-                            }`}
+                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${rule.is_active
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                              }`}
                           >
                             {rule.is_active ? "Active" : "Inactive"}
                           </span>
@@ -604,15 +506,12 @@ const MarkupCommissionManagement = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex justify-end gap-2">
                             <button
-                              onClick={() =>
-                                handleToggle(rule.id, rule.is_active)
-                              }
+                              onClick={() => handleToggle(rule.id, rule.is_active)}
                               disabled={toggleMutation.isLoading}
-                              className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                                rule.is_active
-                                  ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
-                                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                              } disabled:opacity-50`}
+                              className={`px-3 py-1 rounded text-xs font-medium transition-colors ${rule.is_active
+                                ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                } disabled:opacity-50`}
                             >
                               {rule.is_active ? "Deactivate" : "Activate"}
                             </button>
