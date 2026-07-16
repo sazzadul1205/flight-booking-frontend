@@ -2,6 +2,8 @@ import { useAuth } from '../hooks/useAuth';
 
 const DashboardPage = () => {
   const { profile, profileLoading, logout } = useAuth();
+  console.log(profile);
+  
 
   if (profileLoading) {
     return (
@@ -28,15 +30,15 @@ const DashboardPage = () => {
           <div className="bg-gray-50 rounded-lg p-4 space-y-2">
             <p className="text-gray-700">
               <span className="font-semibold">Name:</span>{' '}
-              <span className="text-gray-900">{profile.name}</span>
+              <span className="text-gray-900">{profile?.data?.name}</span>
             </p>
             <p className="text-gray-700">
               <span className="font-semibold">Email:</span>{' '}
-              <span className="text-gray-900">{profile.email}</span>
+              <span className="text-gray-900">{profile?.data?.email}</span>
             </p>
             <p className="text-gray-700">
               <span className="font-semibold">ID:</span>{' '}
-              <span className="text-gray-900">{profile.id}</span>
+              <span className="text-gray-900">{profile?.data?.id}</span>
             </p>
           </div>
         )}
