@@ -40,21 +40,13 @@ export const getRuleById = async (id) => {
 
 // Create rule
 export const createRule = async (ruleData) => {
-  const response = await axios.post(
-    `${API_URL}/config`,
-    ruleData,
-    authConfig(),
-  );
+  const response = await axios.post(`${API_URL}/config`, ruleData, authConfig());
   return response.data;
 };
 
 // Update rule
 export const updateRule = async (id, ruleData) => {
-  const response = await axios.put(
-    `${API_URL}/config/${id}`,
-    ruleData,
-    authConfig(),
-  );
+  const response = await axios.put(`${API_URL}/config/${id}`, ruleData, authConfig());
   return response.data;
 };
 
@@ -69,7 +61,7 @@ export const toggleRuleStatus = async (id, is_active) => {
   const response = await axios.patch(
     `${API_URL}/config/${id}/toggle`,
     { is_active },
-    authConfig(),
+    authConfig()
   );
   return response.data;
 };
