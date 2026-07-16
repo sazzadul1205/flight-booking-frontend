@@ -57,10 +57,23 @@ const FlightSearch = () => {
     loadAirlines();
   }, []);
 
-  // Handle input change
+  // Handle input change - ensure proper types
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setSearchParams({ ...searchParams, [name]: value });
+
+    // Convert to proper types
+    let processedValue = value;
+    if (name === "JourneyType") {
+      processedValue = parseInt(value);
+    } else if (
+      name === "NoofAdult" ||
+      name === "NoofChildren" ||
+      name === "NoofInfant"
+    ) {
+      processedValue = parseInt(value) || 0;
+    }
+
+    setSearchParams({ ...searchParams, [name]: processedValue });
   };
 
   // Handle city search with debounce
@@ -120,10 +133,24 @@ const FlightSearch = () => {
     }
 
     setLoading(true);
-    console.log("searchParams", searchParams);
+
+    // Format data properly for API
+    const formattedParams = {
+      JourneyType: parseInt(searchParams.JourneyType) || 1,
+      Origin: searchParams.Origin.toUpperCase(),
+      Destination: searchParams.Destination.toUpperCase(),
+      DepartureDate: searchParams.DepartureDate,
+      ReturnDate: searchParams.ReturnDate || "",
+      ClassType: searchParams.ClassType || "Economy",
+      NoofAdult: parseInt(searchParams.NoofAdult) || 1,
+      NoofChildren: parseInt(searchParams.NoofChildren) || 0,
+      NoofInfant: parseInt(searchParams.NoofInfant) || 0,
+    };
+
+    console.log("Sending to API:", formattedParams);
 
     try {
-      const data = await searchFlights(searchParams);
+      const data = await searchFlights(formattedParams);
       const results = data.data || [];
       setFlights(results);
       setFilteredFlights(results);
@@ -137,7 +164,12 @@ const FlightSearch = () => {
       });
     } catch (error) {
       console.error("Search error:", error);
-      alert(error.response?.data?.message || "Failed to search flights");
+      if (error.response) {
+        console.error("Error response data:", error.response.data);
+        alert(error.response?.data?.message || "Failed to search flights");
+      } else {
+        alert("Failed to search flights. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -246,7 +278,7 @@ const FlightSearch = () => {
                   value={displayValues.Origin}
                   onChange={handleCitySearch}
                   placeholder="Enter city (e.g., DAC)"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
                   required
                 />
                 {citySuggestions.length > 0 && activeField === "Origin" && (
@@ -278,7 +310,7 @@ const FlightSearch = () => {
                   value={displayValues.Destination}
                   onChange={handleCitySearch}
                   placeholder="Enter city (e.g., DXB)"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
                   required
                 />
                 {citySuggestions.length > 0 &&
@@ -381,38 +413,6 @@ const FlightSearch = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
-
-              {/* Children */}
-              {/* <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Children
-                </label>
-                <input
-                  type="number"
-                  name="NoofChildren"
-                  value={searchParams.NoofChildren}
-                  onChange={handleChange}
-                  min="0"
-                  max="9"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div> */}
-
-              {/* Infants */}
-              {/* <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Infants
-                  </label>
-                  <input
-                    type="number"
-                    name="NoofInfant"
-                    value={searchParams.NoofInfant}
-                    onChange={handleChange}
-                    min="0"
-                    max="9"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div> */}
             </div>
 
             <button
@@ -652,7 +652,7 @@ const FlightSearch = () => {
                     </div>
                   </div>
 
-                  {/* Fare Breakdown - Updated with Gross & Net */}
+                  {/* Fare Breakdown */}
                   <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm border-t pt-2">
                     <div>
                       <span className="text-gray-500">Base Fare:</span>
@@ -748,7 +748,7 @@ const FlightSearch = () => {
                     </div>
                   </div>
 
-                  {/* Tax Breakdown (if available) */}
+                  {/* Tax Breakdown */}
                   {flight.FareBreakdown?.[0]?.TaxesBreakdown && (
                     <div className="mt-2">
                       <details className="text-xs">
