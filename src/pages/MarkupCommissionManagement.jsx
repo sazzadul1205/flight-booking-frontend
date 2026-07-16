@@ -11,13 +11,20 @@ const axiosConfig = {
 
 // Fetch rules function
 const fetchRules = async () => {
-  console.log(axiosConfig);
-
   const { data } = await axios.get(
     `http://localhost:5000/api/config/lists`,
     axiosConfig,
   );
   return data.data;
+};
+
+// Fetch airlines from external API
+const fetchAirlines = async () => {
+  const { data } = await axios.get(
+    `http://localhost:5000/api/airlines`,
+    axiosConfig,
+  );
+  return data.data || [];
 };
 
 // Create rule function
@@ -70,6 +77,11 @@ const MarkupCommissionManagement = () => {
     is_active: true,
   });
 
+  // State for airline search
+  const [airlineSearch, setAirlineSearch] = useState("");
+  const [showAirlineDropdown, setShowAirlineDropdown] = useState(false);
+  const [selectedAirline, setSelectedAirline] = useState(null);
+
   const queryClient = useQueryClient();
 
   // Query for fetching rules
@@ -81,6 +93,21 @@ const MarkupCommissionManagement = () => {
   } = useQuery({
     queryKey: ["rules"],
     queryFn: fetchRules,
+  });
+
+  // Query for fetching airlines
+  const { data: airlines = [], isLoading: airlinesLoading } = useQuery({
+    queryKey: ["airlines"],
+    queryFn: fetchAirlines,
+  });
+
+  // Filter airlines based on search
+  const filteredAirlines = airlines.filter((airline) => {
+    const searchLower = airlineSearch.toLowerCase();
+    return (
+      airline.Code.toLowerCase().includes(searchLower) ||
+      airline.AriLineName.toLowerCase().includes(searchLower)
+    );
   });
 
   // Mutation for creating rule
@@ -141,6 +168,44 @@ const MarkupCommissionManagement = () => {
     });
   };
 
+  // Handle airline search input
+  const handleAirlineSearch = (e) => {
+    const value = e.target.value;
+    setAirlineSearch(value);
+    setShowAirlineDropdown(true);
+
+    // If search is cleared, reset selected airline
+    if (value === "") {
+      setSelectedAirline(null);
+      setFormData({
+        ...formData,
+        airline_code: "",
+      });
+    }
+  };
+
+  // Select airline from dropdown
+  const selectAirline = (airline) => {
+    setSelectedAirline(airline);
+    setAirlineSearch(airline.Code);
+    setFormData({
+      ...formData,
+      airline_code: airline.Code,
+    });
+    setShowAirlineDropdown(false);
+  };
+
+  // Clear selected airline
+  const clearAirline = () => {
+    setSelectedAirline(null);
+    setAirlineSearch("");
+    setFormData({
+      ...formData,
+      airline_code: "",
+    });
+    setShowAirlineDropdown(false);
+  };
+
   // Reset form
   const resetForm = () => {
     setFormData({
@@ -152,6 +217,9 @@ const MarkupCommissionManagement = () => {
       is_active: true,
     });
     setEditingId(null);
+    setSelectedAirline(null);
+    setAirlineSearch("");
+    setShowAirlineDropdown(false);
   };
 
   // Handle edit - populate form with rule data
@@ -165,6 +233,19 @@ const MarkupCommissionManagement = () => {
       commission_value: rule.commission_value,
       is_active: rule.is_active === 1 || rule.is_active === true,
     });
+
+    // If rule has airline code, find and set it
+    if (rule.airline_code) {
+      const found = airlines.find((a) => a.Code === rule.airline_code);
+      if (found) {
+        setSelectedAirline(found);
+        setAirlineSearch(found.Code);
+      }
+    } else {
+      setSelectedAirline(null);
+      setAirlineSearch("");
+    }
+
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -209,6 +290,13 @@ const MarkupCommissionManagement = () => {
     deleteMutation.isLoading ||
     toggleMutation.isLoading;
 
+  // Get airline name from code
+  const getAirlineName = (code) => {
+    if (!code) return "🌍 Global";
+    const airline = airlines.find((a) => a.Code === code);
+    return airline ? `${code} - ${airline.AriLineName}` : code;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -230,21 +318,95 @@ const MarkupCommissionManagement = () => {
 
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Airline Code */}
+              {/* Airline Code with Search */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Airline Code
+                  Airline
                 </label>
-                <input
-                  type="text"
-                  name="airline_code"
-                  value={formData.airline_code}
-                  onChange={handleInputChange}
-                  placeholder="e.g., BG (leave empty for global)"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+                <div className="relative">
+                  <div className="flex">
+                    <input
+                      type="text"
+                      value={airlineSearch}
+                      onChange={handleAirlineSearch}
+                      onFocus={() => {
+                        if (airlines.length > 0 && airlineSearch.length > 0) {
+                          setShowAirlineDropdown(true);
+                        }
+                      }}
+                      placeholder="Search airline by code or name..."
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    {selectedAirline && (
+                      <button
+                        type="button"
+                        onClick={clearAirline}
+                        className="px-3 py-2 bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg hover:bg-gray-200 text-gray-600"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Airline Dropdown */}
+                  {showAirlineDropdown && filteredAirlines.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto">
+                      {airlinesLoading ? (
+                        <div className="px-4 py-2 text-gray-500 text-sm">
+                          Loading airlines...
+                        </div>
+                      ) : (
+                        <>
+                          {/* Global option */}
+                          <div
+                            onClick={() => {
+                              clearAirline();
+                              setShowAirlineDropdown(false);
+                            }}
+                            className="px-4 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100"
+                          >
+                            <div className="font-medium text-gray-700">
+                              🌍 Global
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              Applies to all airlines
+                            </div>
+                          </div>
+
+                          {filteredAirlines.slice(0, 20).map((airline) => (
+                            <div
+                              key={airline.ID}
+                              onClick={() => selectAirline(airline)}
+                              className={`px-4 py-2 hover:bg-blue-50 cursor-pointer ${
+                                selectedAirline?.ID === airline.ID
+                                  ? "bg-blue-50"
+                                  : ""
+                              }`}
+                            >
+                              <div className="flex justify-between items-center">
+                                <span className="font-medium text-gray-800">
+                                  {airline.Code}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {airline.AriLineName}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                          {filteredAirlines.length > 20 && (
+                            <div className="px-4 py-2 text-xs text-gray-400 text-center border-t border-gray-100">
+                              {filteredAirlines.length - 20} more airlines...
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  Leave empty for all airlines
+                  {selectedAirline
+                    ? `Selected: ${selectedAirline.Code} - ${selectedAirline.AriLineName}`
+                    : "Leave empty for global (all airlines)"}
                 </p>
               </div>
 
@@ -395,9 +557,20 @@ const MarkupCommissionManagement = () => {
                   ) : (
                     rules.map((rule) => (
                       <tr key={rule.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-4">
                           <div className="text-sm font-medium text-gray-900">
-                            {rule.airline_code || "🌍 Global"}
+                            {rule.airline_code ? (
+                              <div>
+                                <span className="font-bold">
+                                  {rule.airline_code}
+                                </span>
+                                <span className="text-gray-500 ml-2 text-xs">
+                                  {getAirlineName(rule.airline_code)}
+                                </span>
+                              </div>
+                            ) : (
+                              "🌍 Global"
+                            )}
                           </div>
                           <div className="text-xs text-gray-500">
                             {rule.airline_code

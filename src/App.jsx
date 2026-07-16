@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import DashboardPage from "./pages/DashboardPage";
 import MarkupCommissionManagement from "./pages/MarkupCommissionManagement";
+import FlightSearch from "./pages/FlightSearch"; // Add this
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -24,6 +25,14 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route
+          path="/Search"
+          element={
+            <ProtectedRoute>
+              <FlightSearch />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/"
           element={
             <ProtectedRoute>
@@ -32,7 +41,7 @@ const App = () => {
           }
         />
         <Route
-          path="/Config"
+          path="/config"
           element={
             <ProtectedRoute>
               <MarkupCommissionManagement />
