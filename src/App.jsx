@@ -6,8 +6,8 @@ import {
 } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import FlightSearch from "./pages/FlightSearch";
-import ConfigManagement from "./pages/ConfigPage";
+import DashboardPage from "./pages/DashboardPage";
+import MarkupCommissionManagement from "./pages/MarkupCommissionManagement";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -27,15 +27,15 @@ const App = () => {
           path="/"
           element={
             <ProtectedRoute>
-              <FlightSearch />
+              <DashboardPage />
             </ProtectedRoute>
           }
         />
         <Route
-          path="/config"
+          path="/Config"
           element={
             <ProtectedRoute>
-              <ConfigManagement />
+              <MarkupCommissionManagement />
             </ProtectedRoute>
           }
         />
