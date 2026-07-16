@@ -46,16 +46,16 @@ export const useAuth = () => {
     setLoading(true);
     setError(null);
     try {
-      // Step 1: Register the user
+      // Register the user
       await register(name, email, password);
 
-      // Step 2: Auto-login with the same credentials
+      // Auto-login with the same credentials
       const loginData = await login(email, password);
       localStorage.setItem("token", loginData.token);
       localStorage.setItem("user", JSON.stringify(loginData.user));
       queryClient.invalidateQueries(["profile"]);
 
-      // Step 3: Redirect to dashboard
+      // Redirect to dashboard
       navigate("/dashboard");
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message;
@@ -66,7 +66,7 @@ export const useAuth = () => {
     }
   };
 
-  // Get profile query (protected)
+  // Get profile
   const profileQuery = useQuery({
     queryKey: ["profile"],
     queryFn: getProfile,
@@ -85,6 +85,7 @@ export const useAuth = () => {
     navigate("/login");
   };
 
+  // Return
   return {
     isAuthenticated,
     login: handleLogin,
