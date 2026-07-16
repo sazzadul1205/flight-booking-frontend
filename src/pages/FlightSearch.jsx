@@ -96,6 +96,12 @@ const FlightSearch = () => {
         <div className="bg-white rounded-lg shadow-md p-4 mb-4 flex justify-between items-center">
           <h1 className="text-xl font-bold text-gray-800">✈️ Flight Search</h1>
           <button
+            onClick={() => (window.location.href = "/config")}
+            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 text-sm"
+          >
+            ⚙️ Configure
+          </button>
+          <button
             onClick={logout}
             className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm"
           >

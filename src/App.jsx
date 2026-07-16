@@ -7,6 +7,7 @@ import {
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import FlightSearch from "./pages/FlightSearch";
+import ConfigManagement from "./pages/ConfigPage";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -27,6 +28,14 @@ const App = () => {
           element={
             <ProtectedRoute>
               <FlightSearch />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/config"
+          element={
+            <ProtectedRoute>
+              <ConfigManagement />
             </ProtectedRoute>
           }
         />
