@@ -31,7 +31,7 @@ export const useAuth = () => {
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
       queryClient.invalidateQueries(["profile"]);
-      navigate("/dashboard");
+      navigate("/search");
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message;
       setError(errorMessage);
@@ -56,7 +56,7 @@ export const useAuth = () => {
       queryClient.invalidateQueries(["profile"]);
 
       // Redirect to dashboard
-      navigate("/dashboard");
+      navigate("/search");
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message;
       setError(errorMessage);

@@ -46,7 +46,7 @@ const FlightSearch = () => {
     setCurrentPage(1);
   }, [flights, filteredFlights]);
 
-  // AIRLINE DROPDOWN STATE (like MarkupCommissionManagement)
+  // AIRLINE DROPDOWN STATE
   const [airlineSearch, setAirlineSearch] = useState("");
   const [showAirlineDropdown, setShowAirlineDropdown] = useState(false);
   const [selectedAirlines, setSelectedAirlines] = useState([]);
@@ -70,7 +70,6 @@ const FlightSearch = () => {
     Origin: "",
     Destination: "",
   });
-
 
   // COMPLETE FILTER STATE
   const [filters, setFilters] = useState({
@@ -101,6 +100,7 @@ const FlightSearch = () => {
   const [activeField, setActiveField] = useState("");
   const [searchError, setSearchError] = useState("");
   const [citySuggestions, setCitySuggestions] = useState([]);
+  const [cityLoading, setCityLoading] = useState(false);
 
   // TIME RANGE OPTIONS
   const timeRanges = [
@@ -134,6 +134,13 @@ const FlightSearch = () => {
     loadAirlines();
   }, []);
 
+  // DEBUG: Log flight states
+  useEffect(() => {
+    console.log("Flights:", flights.length);
+    console.log("Filtered Flights:", filteredFlights.length);
+    console.log("Current Flights:", currentFlights.length);
+  }, [flights, filteredFlights, currentFlights.length]);
+
   // AIRLINE DROPDOWN HANDLERS
   const handleAirlineSearch = (e) => {
     const value = e.target.value;
@@ -141,7 +148,6 @@ const FlightSearch = () => {
     setShowAirlineDropdown(true);
   };
 
-  // AIRLINE DROPDOWN HANDLERS
   const selectAirline = (airline) => {
     if (selectedAirlines.some((a) => a.ID === airline.ID)) {
       return;
@@ -156,7 +162,6 @@ const FlightSearch = () => {
     setShowAirlineDropdown(false);
   };
 
-  // Remove selected airline
   const removeAirline = (airline) => {
     setSelectedAirlines(selectedAirlines.filter((a) => a.ID !== airline.ID));
     setFilters((prev) => ({
@@ -166,7 +171,6 @@ const FlightSearch = () => {
     }));
   };
 
-  // CLEAR ALL AIRLINES
   const clearAllAirlines = () => {
     setSelectedAirlines([]);
     setFilters((prev) => ({
@@ -178,7 +182,6 @@ const FlightSearch = () => {
     setShowAirlineDropdown(false);
   };
 
-  // FILTERED AIRLINES
   const filteredAirlines = airlines.filter((airline) => {
     const searchLower = airlineSearch.toLowerCase();
     return (
@@ -217,6 +220,7 @@ const FlightSearch = () => {
     const { name, value } = e.target;
     setDisplayValues({ ...displayValues, [name]: value });
     setActiveField(name);
+    setCityLoading(true);
 
     if (value.length > 1) {
       try {
@@ -229,6 +233,7 @@ const FlightSearch = () => {
     } else {
       setCitySuggestions([]);
     }
+    setCityLoading(false);
   };
 
   const selectCity = (city) => {
@@ -261,6 +266,10 @@ const FlightSearch = () => {
       setSearchError("Please select Departure Date");
       return;
     }
+    if (searchParams.JourneyType === 2 && !searchParams.ReturnDate) {
+      setSearchError("Return Date is required for Round Trip");
+      return;
+    }
     if (searchParams.Origin === searchParams.Destination) {
       setSearchError("Origin and Destination cannot be the same");
       return;
@@ -285,7 +294,7 @@ const FlightSearch = () => {
       const data = await searchFlights(formattedParams);
       const results = data.data || [];
       setFlights(results);
-      setFilteredFlights(results);
+      setFilteredFlights([]); // Clear filtered results
       resetFilters();
 
       if (results.length === 0) {
@@ -307,49 +316,118 @@ const FlightSearch = () => {
     }
   };
 
-  // FILTER HANDLERS - WITH LOADING STATE
+  // ✅ FIXED: FILTER HANDLERS
   const applyFilters = async () => {
-    if (flights.length === 0) return;
+    if (flights.length === 0) {
+      setSearchError("No flights to filter");
+      return;
+    }
 
     setFilterLoading(true);
+    setSearchError("");
 
     const filterData = {};
 
-    if (filters.min_price) filterData.min_price = parseFloat(filters.min_price);
-    if (filters.max_price) filterData.max_price = parseFloat(filters.max_price);
+    // Price range - only include if value is not empty
+    if (filters.min_price && filters.min_price !== "") {
+      filterData.min_price = parseFloat(filters.min_price);
+    }
+    if (filters.max_price && filters.max_price !== "") {
+      filterData.max_price = parseFloat(filters.max_price);
+    }
+
+    // Arrays with values
     if (filters.fare_type.length > 0) filterData.fare_type = filters.fare_type;
     if (filters.airlines.length > 0) filterData.airlines = filters.airlines;
     if (filters.airline_code.length > 0) filterData.airline_code = filters.airline_code;
     if (filters.aircraft.length > 0) filterData.aircraft = filters.aircraft;
     if (filters.baggage.length > 0) filterData.baggage = filters.baggage;
-    if (filters.onward_flight_stops.length > 0) filterData.onward_flight_stops = filters.onward_flight_stops;
-    if (filters.onward_depart_time.length > 0) filterData.onward_depart_time = filters.onward_depart_time;
-    if (filters.onward_arrival_time.length > 0) filterData.onward_arrival_time = filters.onward_arrival_time;
-    if (filters.onward_flying_time.length > 0) filterData.onward_flying_time = filters.onward_flying_time;
-    if (filters.onward_transit_hour.length > 0) filterData.onward_transit_hour = filters.onward_transit_hour;
-    if (filters.onward_layover_airport.length > 0) filterData.onward_layover_airport = filters.onward_layover_airport;
-    if (filters.onward_destination_airport.length > 0) filterData.onward_destination_airport = filters.onward_destination_airport;
-    if (filters.return_flight_stops.length > 0) filterData.return_flight_stops = filters.return_flight_stops;
-    if (filters.return_depart_time.length > 0) filterData.return_depart_time = filters.return_depart_time;
-    if (filters.return_arrival_time.length > 0) filterData.return_arrival_time = filters.return_arrival_time;
-    if (filters.return_flying_time.length > 0) filterData.return_flying_time = filters.return_flying_time;
-    if (filters.return_transit_hour.length > 0) filterData.return_transit_hour = filters.return_transit_hour;
-    if (filters.return_layover_airport.length > 0) filterData.return_layover_airport = filters.return_layover_airport;
-    if (filters.return_destination_airport.length > 0) filterData.return_destination_airport = filters.return_destination_airport;
+
+    // Stops
+    if (filters.onward_flight_stops.length > 0) {
+      filterData.onward_flight_stops = filters.onward_flight_stops;
+    }
+    if (filters.return_flight_stops.length > 0) {
+      filterData.return_flight_stops = filters.return_flight_stops;
+    }
+
+    // Time ranges
+    if (filters.onward_depart_time.length > 0) {
+      filterData.onward_depart_time = filters.onward_depart_time;
+    }
+    if (filters.onward_arrival_time.length > 0) {
+      filterData.onward_arrival_time = filters.onward_arrival_time;
+    }
+    if (filters.onward_flying_time.length > 0) {
+      filterData.onward_flying_time = filters.onward_flying_time;
+    }
+    if (filters.onward_transit_hour.length > 0) {
+      filterData.onward_transit_hour = filters.onward_transit_hour;
+    }
+    if (filters.return_depart_time.length > 0) {
+      filterData.return_depart_time = filters.return_depart_time;
+    }
+    if (filters.return_arrival_time.length > 0) {
+      filterData.return_arrival_time = filters.return_arrival_time;
+    }
+    if (filters.return_flying_time.length > 0) {
+      filterData.return_flying_time = filters.return_flying_time;
+    }
+    if (filters.return_transit_hour.length > 0) {
+      filterData.return_transit_hour = filters.return_transit_hour;
+    }
+
+    // Airport filters
+    if (filters.onward_layover_airport.length > 0) {
+      filterData.onward_layover_airport = filters.onward_layover_airport;
+    }
+    if (filters.onward_destination_airport.length > 0) {
+      filterData.onward_destination_airport = filters.onward_destination_airport;
+    }
+    if (filters.return_layover_airport.length > 0) {
+      filterData.return_layover_airport = filters.return_layover_airport;
+    }
+    if (filters.return_destination_airport.length > 0) {
+      filterData.return_destination_airport = filters.return_destination_airport;
+    }
+
+    // If no filters are selected, show all flights
+    if (Object.keys(filterData).length === 0) {
+      setFilteredFlights(flights);
+      setCurrentPage(1);
+      setFilterLoading(false);
+      return;
+    }
+
+    console.log("Sending to backend:", {
+      flightsCount: flights.length,
+      filterData
+    });
 
     try {
-      const data = await filterFlights(flights, filterData);
-      setFilteredFlights(data.data || []);
+      const response = await filterFlights(flights, filterData);
+      console.log("Filter response:", response);
+
+      // ✅ FIX: Properly set filtered flights
+      const filtered = response.data || [];
+      setFilteredFlights(filtered);
       setCurrentPage(1);
+
+      // Show message if no results
+      if (filtered.length === 0) {
+        setSearchError("No flights match your filter criteria");
+      } else {
+        setSearchError("");
+      }
     } catch (error) {
       console.error("Filter error:", error);
-      alert("Failed to apply filters");
+      setSearchError(error.response?.data?.message || "Failed to apply filters. Please try again.");
     } finally {
       setFilterLoading(false);
     }
   };
 
-  // Reset Filters
+  // ✅ FIXED: Reset Filters
   const resetFilters = () => {
     setFilters({
       min_price: "",
@@ -377,8 +455,9 @@ const FlightSearch = () => {
     setSelectedAirlines([]);
     setAirlineSearch("");
     setShowAirlineDropdown(false);
-    setFilteredFlights(flights);
+    setFilteredFlights([]); // ✅ Reset to empty, so it shows flights
     setCurrentPage(1);
+    setSearchError("");
   };
 
   // TOGGLE HELPERS
@@ -568,22 +647,34 @@ const FlightSearch = () => {
                 name="Origin"
                 value={displayValues.Origin}
                 onChange={handleCitySearch}
+                onBlur={() => setTimeout(() => setCitySuggestions([]), 200)}
                 placeholder="Enter city (e.g., DAC)"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
                 required
               />
-              {citySuggestions.length > 0 && activeField === "Origin" && (
+              {/* Only show dropdown when there are suggestions OR loading */}
+              {activeField === "Origin" && (citySuggestions.length > 0 || cityLoading) && (
                 <div className="absolute z-10 w-full bg-white border rounded-lg mt-1 max-h-40 overflow-y-auto shadow-lg">
-                  {citySuggestions.map((city, index) => (
-                    <div
-                      key={index}
-                      onClick={() => selectCity(city)}
-                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                    >
-                      <span className="font-medium">{city.AirportCode}</span>
-                      <span className="text-gray-500 ml-2">{city.SearchString}</span>
+                  {cityLoading ? (
+                    <div className="px-3 py-2 text-sm text-gray-500 flex items-center gap-2">
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Searching cities...
                     </div>
-                  ))}
+                  ) : (
+                    citySuggestions.map((city, index) => (
+                      <div
+                        key={index}
+                        onClick={() => selectCity(city)}
+                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                      >
+                        <span className="font-medium">{city.AirportCode}</span>
+                        <span className="text-gray-500 ml-2">{city.SearchString}</span>
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </div>
@@ -596,22 +687,34 @@ const FlightSearch = () => {
                 name="Destination"
                 value={displayValues.Destination}
                 onChange={handleCitySearch}
+                onBlur={() => setTimeout(() => setCitySuggestions([]), 200)}
                 placeholder="Enter city (e.g., DXB)"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
                 required
               />
-              {citySuggestions.length > 0 && activeField === "Destination" && (
+              {/* Only show dropdown when there are suggestions OR loading */}
+              {activeField === "Destination" && (citySuggestions.length > 0 || cityLoading) && (
                 <div className="absolute z-10 w-full bg-white border rounded-lg mt-1 max-h-40 overflow-y-auto shadow-lg">
-                  {citySuggestions.map((city, index) => (
-                    <div
-                      key={index}
-                      onClick={() => selectCity(city)}
-                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                    >
-                      <span className="font-medium">{city.AirportCode}</span>
-                      <span className="text-gray-500 ml-2">{city.SearchString}</span>
+                  {cityLoading ? (
+                    <div className="px-3 py-2 text-sm text-gray-500 flex items-center gap-2">
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Searching cities...
                     </div>
-                  ))}
+                  ) : (
+                    citySuggestions.map((city, index) => (
+                      <div
+                        key={index}
+                        onClick={() => selectCity(city)}
+                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                      >
+                        <span className="font-medium">{city.AirportCode}</span>
+                        <span className="text-gray-500 ml-2">{city.SearchString}</span>
+                      </div>
+                    ))
+                  )}
                 </div>
               )}
             </div>
@@ -1371,12 +1474,9 @@ const FlightSearch = () => {
         <div id="flight-results" className="bg-white rounded-lg shadow-md p-4">
           {/* Results Header */}
           <div className="flex justify-between items-center mb-3">
-            {/* Results Title */}
             <h2 className="text-lg font-semibold text-gray-800">
               Results ({totalItems} flights)
             </h2>
-
-            {/* Pagination */}
             <span className="text-sm text-gray-500">
               Showing {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}
             </span>
@@ -1397,7 +1497,6 @@ const FlightSearch = () => {
           <div className={`space-y-3 ${filterLoading ? "opacity-60 pointer-events-none" : ""}`}>
             {paginatedFlights.map((flight, index) => (
               <div key={index} className="border rounded-lg p-4 hover:shadow-md transition">
-                {console.log(flight)}
                 {/* Flight Route & Airline */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                   <div>

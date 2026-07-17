@@ -1,6 +1,6 @@
 // pages/MarkupCommissionManagement.jsx
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getAllRules,
   createRule,
@@ -25,6 +25,11 @@ const MarkupCommissionManagement = () => {
   const [showAirlineDropdown, setShowAirlineDropdown] = useState(false);
   const [selectedAirline, setSelectedAirline] = useState(null);
 
+  // Error and Success message states
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
   const queryClient = useQueryClient();
 
   // ============ QUERIES ============
@@ -32,7 +37,7 @@ const MarkupCommissionManagement = () => {
   // Fetch rules using the API
   const {
     data: rulesResponse,
-    isLoading,
+    isLoading: rulesLoading,
     isError,
     error,
   } = useQuery({
@@ -51,53 +56,6 @@ const MarkupCommissionManagement = () => {
 
   const airlines = airlinesResponse?.data || [];
 
-  // ============ MUTATIONS ============
-
-  const createMutation = useMutation({
-    mutationFn: createRule,
-    onSuccess: () => {
-      queryClient.invalidateQueries(["rules"]);
-      resetForm();
-      alert("Rule created successfully!");
-    },
-    onError: (error) => {
-      alert(error.response?.data?.message || "Failed to create rule");
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, ...data }) => updateRule(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(["rules"]);
-      resetForm();
-      alert("Rule updated successfully!");
-    },
-    onError: (error) => {
-      alert(error.response?.data?.message || "Failed to update rule");
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteRule,
-    onSuccess: () => {
-      queryClient.invalidateQueries(["rules"]);
-      alert("Rule deleted successfully!");
-    },
-    onError: (error) => {
-      alert(error.response?.data?.message || "Failed to delete rule");
-    },
-  });
-
-  const toggleMutation = useMutation({
-    mutationFn: ({ id, is_active }) => toggleRuleStatus(id, is_active),
-    onSuccess: () => {
-      queryClient.invalidateQueries(["rules"]);
-    },
-    onError: (error) => {
-      alert(error.response?.data?.message || "Failed to toggle rule");
-    },
-  });
-
   // ============ HANDLERS ============
 
   const handleInputChange = (e) => {
@@ -106,6 +64,9 @@ const MarkupCommissionManagement = () => {
       ...formData,
       [name]: type === "checkbox" ? checked : value,
     });
+    // Clear messages when user starts typing
+    setErrorMessage("");
+    setSuccessMessage("");
   };
 
   const handleAirlineSearch = (e) => {
@@ -116,6 +77,9 @@ const MarkupCommissionManagement = () => {
       setSelectedAirline(null);
       setFormData({ ...formData, airline_code: "" });
     }
+    // Clear messages when user starts typing
+    setErrorMessage("");
+    setSuccessMessage("");
   };
 
   const selectAirline = (airline) => {
@@ -123,6 +87,8 @@ const MarkupCommissionManagement = () => {
     setAirlineSearch(airline.Code);
     setFormData({ ...formData, airline_code: airline.Code });
     setShowAirlineDropdown(false);
+    setErrorMessage("");
+    setSuccessMessage("");
   };
 
   const clearAirline = () => {
@@ -130,6 +96,8 @@ const MarkupCommissionManagement = () => {
     setAirlineSearch("");
     setFormData({ ...formData, airline_code: "" });
     setShowAirlineDropdown(false);
+    setErrorMessage("");
+    setSuccessMessage("");
   };
 
   const resetForm = () => {
@@ -145,10 +113,14 @@ const MarkupCommissionManagement = () => {
     setSelectedAirline(null);
     setAirlineSearch("");
     setShowAirlineDropdown(false);
+    setErrorMessage("");
+    setSuccessMessage("");
   };
 
   const handleEdit = (rule) => {
     setEditingId(rule.id);
+    setErrorMessage("");
+    setSuccessMessage("");
     setFormData({
       airline_code: rule.airline_code || "",
       markup_type: rule.markup_type,
@@ -171,8 +143,93 @@ const MarkupCommissionManagement = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // CREATE RULE - Basic function
+  const handleCreateRule = async (payload) => {
+    setIsLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+    try {
+      await createRule(payload);
+      await queryClient.invalidateQueries(["rules"]);
+      resetForm();
+      setSuccessMessage("Rule created successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (error) {
+      setErrorMessage(error.response?.data?.message || " Failed to create rule");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // UPDATE RULE - Basic function
+  const handleUpdateRule = async (id, payload) => {
+    setIsLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+    try {
+      await updateRule(id, payload);
+      await queryClient.invalidateQueries(["rules"]);
+      resetForm();
+      setSuccessMessage("Rule updated successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (error) {
+      setErrorMessage(error.response?.data?.message || " Failed to update rule");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // DELETE RULE - Basic function
+  const handleDeleteRule = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this rule?")) return;
+
+    setIsLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+    try {
+      await deleteRule(id);
+      await queryClient.invalidateQueries(["rules"]);
+      setSuccessMessage("Rule deleted successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (error) {
+      setErrorMessage(error.response?.data?.message || " Failed to delete rule");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // TOGGLE RULE STATUS - Basic function
+  const handleToggleRule = async (id, currentStatus) => {
+    setIsLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+    try {
+      await toggleRuleStatus(id, !currentStatus);
+      await queryClient.invalidateQueries(["rules"]);
+      setSuccessMessage("Rule status updated successfully!");
+      setTimeout(() => setSuccessMessage(""), 3000);
+    } catch (error) {
+      setErrorMessage(error.response?.data?.message || " Failed to toggle rule status");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    // Validate form
+    if (!formData.markup_value || parseFloat(formData.markup_value) < 0) {
+      setErrorMessage("Please enter a valid markup value");
+      return;
+    }
+    if (!formData.commission_value || parseFloat(formData.commission_value) < 0) {
+      setErrorMessage("Please enter a valid commission value");
+      return;
+    }
+
     const payload = {
       ...formData,
       markup_value: parseFloat(formData.markup_value),
@@ -181,19 +238,18 @@ const MarkupCommissionManagement = () => {
     };
 
     if (editingId) {
-      updateMutation.mutate({ id: editingId, ...payload });
+      handleUpdateRule(editingId, payload);
     } else {
-      createMutation.mutate(payload);
+      handleCreateRule(payload);
     }
   };
 
   const handleDelete = (id) => {
-    if (!window.confirm("Are you sure you want to delete this rule?")) return;
-    deleteMutation.mutate(id);
+    handleDeleteRule(id);
   };
 
   const handleToggle = (id, currentStatus) => {
-    toggleMutation.mutate({ id, is_active: !currentStatus });
+    handleToggleRule(id, currentStatus);
   };
 
   const getAirlineName = (code) => {
@@ -201,12 +257,6 @@ const MarkupCommissionManagement = () => {
     const airline = airlines.find((a) => a.Code === code);
     return airline ? `${code} - ${airline.AriLineName}` : code;
   };
-
-  const isLoadingMutation =
-    createMutation.isLoading ||
-    updateMutation.isLoading ||
-    deleteMutation.isLoading ||
-    toggleMutation.isLoading;
 
   // Filter airlines based on search
   const filteredAirlines = airlines.filter((airline) => {
@@ -236,6 +286,34 @@ const MarkupCommissionManagement = () => {
           <h2 className="text-lg font-semibold text-gray-900 mb-4">
             {editingId ? "Edit Rule" : "Create New Rule"}
           </h2>
+
+          {/* Error Message Display */}
+          {errorMessage && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg text-sm flex items-center gap-2">
+              <span className="text-lg">⚠️</span>
+              <span className="flex-1">{errorMessage}</span>
+              <button
+                onClick={() => setErrorMessage("")}
+                className="text-red-500 hover:text-red-700 font-bold"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* Success Message Display */}
+          {successMessage && (
+            <div className="mb-4 p-3 bg-green-100 border border-green-300 text-green-700 rounded-lg text-sm flex items-center gap-2">
+              <span className="text-lg">✅</span>
+              <span className="flex-1">{successMessage}</span>
+              <button
+                onClick={() => setSuccessMessage("")}
+                className="text-green-500 hover:text-green-700 font-bold"
+              >
+                ✕
+              </button>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -405,22 +483,31 @@ const MarkupCommissionManagement = () => {
             <div className="flex gap-3 mt-4">
               <button
                 type="submit"
-                disabled={isLoadingMutation}
+                disabled={isLoading}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
               >
-                {isLoadingMutation
+                {isLoading
                   ? "Saving..."
                   : editingId
                     ? "Update Rule"
                     : "Create Rule"}
               </button>
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                >
+                  Cancel
+                </button>
+              )}
             </div>
           </form>
         </div>
 
         {/* Rules Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          {isLoading ? (
+          {rulesLoading ? (
             <div className="p-8 text-center text-gray-500">
               Loading rules...
             </div>
@@ -507,7 +594,7 @@ const MarkupCommissionManagement = () => {
                           <div className="flex justify-end gap-2">
                             <button
                               onClick={() => handleToggle(rule.id, rule.is_active)}
-                              disabled={toggleMutation.isLoading}
+                              disabled={isLoading}
                               className={`px-3 py-1 rounded text-xs font-medium transition-colors ${rule.is_active
                                 ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
                                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -523,7 +610,7 @@ const MarkupCommissionManagement = () => {
                             </button>
                             <button
                               onClick={() => handleDelete(rule.id)}
-                              disabled={deleteMutation.isLoading}
+                              disabled={isLoading}
                               className="px-3 py-1 bg-red-100 text-red-700 rounded text-xs font-medium hover:bg-red-200 transition-colors disabled:opacity-50"
                             >
                               Delete
