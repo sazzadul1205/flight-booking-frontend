@@ -1,5 +1,5 @@
 // src/pages/FlightSearch.jsx
-import { useState, useEffect, useRef } from "react"; // ← Added useRef
+import { useState, useEffect, useRef } from "react";
 import {
   searchFlights,
   getCities,
@@ -8,38 +8,36 @@ import {
 } from "../api/flight";
 
 const FlightSearch = () => {
-  const [loading, setLoading] = useState(false);
-  const [filterLoading, setFilterLoading] = useState(false);
   const [flights, setFlights] = useState([]);
-  const [filteredFlights, setFilteredFlights] = useState([]);
   const [airlines, setAirlines] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [filterLoading, setFilterLoading] = useState(false);
+  const [filteredFlights, setFilteredFlights] = useState([]);
 
-  // ============================================================
   // PAGINATION STATE
-  // ============================================================
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
-  // ✅ Track first render to avoid cascading
+  // PAGINATION REF
   const isFirstRender = useRef(true);
 
-  // ============================================================
   // PAGINATION COMPUTED VALUES
-  // ============================================================
   const currentFlights = filteredFlights.length > 0 ? filteredFlights : flights;
   const totalItems = currentFlights.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
+  // GET CURRENT PAGE ITEMS
   const getCurrentPageItems = () => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     return currentFlights.slice(startIndex, endIndex);
   };
 
+  // PAGINATED FLIGHTS
   const paginatedFlights = getCurrentPageItems();
 
-  // ✅ FIXED: Reset to page 1 when flights change (skip first render)
+  // Update current page when flights change
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
@@ -48,13 +46,12 @@ const FlightSearch = () => {
     setCurrentPage(1);
   }, [flights, filteredFlights]);
 
-  // ============================================================
   // AIRLINE DROPDOWN STATE (like MarkupCommissionManagement)
-  // ============================================================
   const [airlineSearch, setAirlineSearch] = useState("");
   const [showAirlineDropdown, setShowAirlineDropdown] = useState(false);
   const [selectedAirlines, setSelectedAirlines] = useState([]);
 
+  // FLIGHT SEARCH STATE
   const [searchParams, setSearchParams] = useState({
     JourneyType: 1,
     Origin: "",
@@ -68,14 +65,14 @@ const FlightSearch = () => {
     Flex: null,
   });
 
+  // FLIGHT DISPLAY STATE
   const [displayValues, setDisplayValues] = useState({
     Origin: "",
     Destination: "",
   });
 
-  // ============================================================
+
   // COMPLETE FILTER STATE
-  // ============================================================
   const [filters, setFilters] = useState({
     min_price: "",
     max_price: "",
@@ -100,13 +97,12 @@ const FlightSearch = () => {
     return_destination_airport: [],
   });
 
-  const [citySuggestions, setCitySuggestions] = useState([]);
+  // CITY SUGGESTIONS
   const [activeField, setActiveField] = useState("");
   const [searchError, setSearchError] = useState("");
+  const [citySuggestions, setCitySuggestions] = useState([]);
 
-  // ============================================================
   // TIME RANGE OPTIONS
-  // ============================================================
   const timeRanges = [
     { name: "00:00 To 05:59" },
     { name: "06:00 To 11:59" },
@@ -114,6 +110,7 @@ const FlightSearch = () => {
     { name: "18:00 To 23:59" },
   ];
 
+  // HOUR RANGE OPTIONS
   const hourRanges = [
     { name: "0 To 6 Hour" },
     { name: "6 To 12 Hour" },
@@ -121,11 +118,10 @@ const FlightSearch = () => {
     { name: "18 Hour +" },
   ];
 
+  // STOP OPTIONS
   const stopOptions = [0, 1, 2, 3];
 
-  // ============================================================
   // LOAD AIRLINES ON MOUNT
-  // ============================================================
   useEffect(() => {
     const loadAirlines = async () => {
       try {
@@ -138,15 +134,14 @@ const FlightSearch = () => {
     loadAirlines();
   }, []);
 
-  // ============================================================
   // AIRLINE DROPDOWN HANDLERS
-  // ============================================================
   const handleAirlineSearch = (e) => {
     const value = e.target.value;
     setAirlineSearch(value);
     setShowAirlineDropdown(true);
   };
 
+  // AIRLINE DROPDOWN HANDLERS
   const selectAirline = (airline) => {
     if (selectedAirlines.some((a) => a.ID === airline.ID)) {
       return;
@@ -161,6 +156,7 @@ const FlightSearch = () => {
     setShowAirlineDropdown(false);
   };
 
+  // Remove selected airline
   const removeAirline = (airline) => {
     setSelectedAirlines(selectedAirlines.filter((a) => a.ID !== airline.ID));
     setFilters((prev) => ({
@@ -170,6 +166,7 @@ const FlightSearch = () => {
     }));
   };
 
+  // CLEAR ALL AIRLINES
   const clearAllAirlines = () => {
     setSelectedAirlines([]);
     setFilters((prev) => ({
@@ -181,6 +178,7 @@ const FlightSearch = () => {
     setShowAirlineDropdown(false);
   };
 
+  // FILTERED AIRLINES
   const filteredAirlines = airlines.filter((airline) => {
     const searchLower = airlineSearch.toLowerCase();
     return (
@@ -189,9 +187,7 @@ const FlightSearch = () => {
     );
   });
 
-  // ============================================================
   // HANDLE INPUT CHANGES
-  // ============================================================
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
@@ -216,9 +212,7 @@ const FlightSearch = () => {
     setSearchError("");
   };
 
-  // ============================================================
   // CITY SEARCH
-  // ============================================================
   const handleCitySearch = async (e) => {
     const { name, value } = e.target;
     setDisplayValues({ ...displayValues, [name]: value });
@@ -250,9 +244,7 @@ const FlightSearch = () => {
     setSearchError("");
   };
 
-  // ============================================================
   // FLIGHT SEARCH
-  // ============================================================
   const handleSearch = async (e) => {
     e.preventDefault();
     setSearchError("");
@@ -315,9 +307,7 @@ const FlightSearch = () => {
     }
   };
 
-  // ============================================================
   // FILTER HANDLERS - WITH LOADING STATE
-  // ============================================================
   const applyFilters = async () => {
     if (flights.length === 0) return;
 
@@ -359,6 +349,7 @@ const FlightSearch = () => {
     }
   };
 
+  // Reset Filters
   const resetFilters = () => {
     setFilters({
       min_price: "",
@@ -390,9 +381,7 @@ const FlightSearch = () => {
     setCurrentPage(1);
   };
 
-  // ============================================================
   // TOGGLE HELPERS
-  // ============================================================
   const toggleArrayValue = (array, value) => {
     return array.includes(value)
       ? array.filter((item) => item !== value)
@@ -432,9 +421,7 @@ const FlightSearch = () => {
     return airline?.AriLineName || code;
   };
 
-  // ============================================================
   // PAGINATION HANDLERS
-  // ============================================================
   const goToPage = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
@@ -454,9 +441,7 @@ const FlightSearch = () => {
     }
   };
 
-  // ============================================================
   // COUNT ACTIVE FILTERS
-  // ============================================================
   const getActiveFilterCount = () => {
     let count = 0;
     const filterValues = Object.values(filters);
@@ -468,9 +453,7 @@ const FlightSearch = () => {
     return count;
   };
 
-  // ============================================================
   // RENDER PAGINATION
-  // ============================================================
   const renderPagination = () => {
     if (totalPages <= 1) return null;
 
@@ -490,8 +473,8 @@ const FlightSearch = () => {
         onClick={goToPreviousPage}
         disabled={currentPage === 1 || filterLoading}
         className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${currentPage === 1 || filterLoading
-            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
       >
         ← Prev
@@ -525,8 +508,8 @@ const FlightSearch = () => {
           onClick={() => goToPage(i)}
           disabled={filterLoading}
           className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${currentPage === i
-              ? "bg-blue-600 text-white"
-              : "hover:bg-gray-200"
+            ? "bg-blue-600 text-white"
+            : "hover:bg-gray-200"
             } ${filterLoading ? "opacity-50 cursor-not-allowed" : ""}`}
         >
           {i}
@@ -560,8 +543,8 @@ const FlightSearch = () => {
         onClick={goToNextPage}
         disabled={currentPage === totalPages || filterLoading}
         className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${currentPage === totalPages || filterLoading
-            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+          ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
           }`}
       >
         Next →
@@ -571,9 +554,6 @@ const FlightSearch = () => {
     return pages;
   };
 
-  // ============================================================
-  // RENDER
-  // ============================================================
   return (
     <div>
       {/* Search Form */}
@@ -723,9 +703,7 @@ const FlightSearch = () => {
         </form>
       </div>
 
-      {/* ============================================================
-          FILTER SECTION
-          ============================================================ */}
+      {/* FILTER SECTION */}
       {flights.length > 0 && (
         <div className="bg-white rounded-lg shadow-md p-4 mb-4">
           <div className="flex justify-between items-center mb-3">
@@ -818,8 +796,8 @@ const FlightSearch = () => {
                       onClick={() => !filterLoading && toggleFareType(type)}
                       disabled={filterLoading}
                       className={`px-3 py-1 rounded-lg text-xs border transition-colors ${filters.fare_type.includes(type)
-                          ? "bg-blue-600 text-white border-blue-600"
-                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                         } ${filterLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
                       {type}
@@ -938,8 +916,8 @@ const FlightSearch = () => {
                       onClick={() => !filterLoading && toggleStop("onward_flight_stops", stops)}
                       disabled={filterLoading}
                       className={`px-3 py-1 rounded-lg text-xs border transition-colors ${filters.onward_flight_stops.includes(stops)
-                          ? "bg-blue-600 text-white border-blue-600"
-                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                         } ${filterLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
                       {stops === 0 ? "Non-stop" : `${stops} stop${stops > 1 ? "s" : ""}`}
@@ -958,8 +936,8 @@ const FlightSearch = () => {
                       onClick={() => !filterLoading && toggleTimeRange("onward_depart_time", time)}
                       disabled={filterLoading}
                       className={`px-3 py-1 rounded-lg text-xs border transition-colors ${filters.onward_depart_time.some((t) => t.name === time.name)
-                          ? "bg-blue-600 text-white border-blue-600"
-                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                         } ${filterLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
                       {time.name}
@@ -978,8 +956,8 @@ const FlightSearch = () => {
                       onClick={() => !filterLoading && toggleTimeRange("onward_arrival_time", time)}
                       disabled={filterLoading}
                       className={`px-3 py-1 rounded-lg text-xs border transition-colors ${filters.onward_arrival_time.some((t) => t.name === time.name)
-                          ? "bg-blue-600 text-white border-blue-600"
-                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                         } ${filterLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
                       {time.name}
@@ -998,8 +976,8 @@ const FlightSearch = () => {
                       onClick={() => !filterLoading && toggleTimeRange("onward_flying_time", range)}
                       disabled={filterLoading}
                       className={`px-3 py-1 rounded-lg text-xs border transition-colors ${filters.onward_flying_time.some((r) => r.name === range.name)
-                          ? "bg-blue-600 text-white border-blue-600"
-                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                         } ${filterLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
                       {range.name}
@@ -1018,8 +996,8 @@ const FlightSearch = () => {
                       onClick={() => !filterLoading && toggleTimeRange("onward_transit_hour", range)}
                       disabled={filterLoading}
                       className={`px-3 py-1 rounded-lg text-xs border transition-colors ${filters.onward_transit_hour.some((r) => r.name === range.name)
-                          ? "bg-blue-600 text-white border-blue-600"
-                          : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                         } ${filterLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
                       {range.name}
@@ -1120,8 +1098,8 @@ const FlightSearch = () => {
                           onClick={() => !filterLoading && toggleStop("return_flight_stops", stops)}
                           disabled={filterLoading}
                           className={`px-3 py-1 rounded-lg text-xs border transition-colors ${filters.return_flight_stops.includes(stops)
-                              ? "bg-blue-600 text-white border-blue-600"
-                              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                            ? "bg-blue-600 text-white border-blue-600"
+                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                             } ${filterLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
                           {stops === 0 ? "Non-stop" : `${stops} stop${stops > 1 ? "s" : ""}`}
@@ -1139,8 +1117,8 @@ const FlightSearch = () => {
                           onClick={() => !filterLoading && toggleTimeRange("return_depart_time", time)}
                           disabled={filterLoading}
                           className={`px-3 py-1 rounded-lg text-xs border transition-colors ${filters.return_depart_time.some((t) => t.name === time.name)
-                              ? "bg-blue-600 text-white border-blue-600"
-                              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                            ? "bg-blue-600 text-white border-blue-600"
+                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                             } ${filterLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
                           {time.name}
@@ -1158,8 +1136,8 @@ const FlightSearch = () => {
                           onClick={() => !filterLoading && toggleTimeRange("return_arrival_time", time)}
                           disabled={filterLoading}
                           className={`px-3 py-1 rounded-lg text-xs border transition-colors ${filters.return_arrival_time.some((t) => t.name === time.name)
-                              ? "bg-blue-600 text-white border-blue-600"
-                              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                            ? "bg-blue-600 text-white border-blue-600"
+                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                             } ${filterLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
                           {time.name}
@@ -1177,8 +1155,8 @@ const FlightSearch = () => {
                           onClick={() => !filterLoading && toggleTimeRange("return_flying_time", range)}
                           disabled={filterLoading}
                           className={`px-3 py-1 rounded-lg text-xs border transition-colors ${filters.return_flying_time.some((r) => r.name === range.name)
-                              ? "bg-blue-600 text-white border-blue-600"
-                              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                            ? "bg-blue-600 text-white border-blue-600"
+                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                             } ${filterLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
                           {range.name}
@@ -1196,8 +1174,8 @@ const FlightSearch = () => {
                           onClick={() => !filterLoading && toggleTimeRange("return_transit_hour", range)}
                           disabled={filterLoading}
                           className={`px-3 py-1 rounded-lg text-xs border transition-colors ${filters.return_transit_hour.some((r) => r.name === range.name)
-                              ? "bg-blue-600 text-white border-blue-600"
-                              : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                            ? "bg-blue-600 text-white border-blue-600"
+                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                             } ${filterLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
                           {range.name}
@@ -1388,15 +1366,17 @@ const FlightSearch = () => {
         </div>
       )}
 
-      {/* ============================================================
-          FLIGHT RESULTS WITH PAGINATION
-          ============================================================ */}
+      {/* FLIGHT RESULTS WITH PAGINATION */}
       {currentFlights.length > 0 && (
         <div id="flight-results" className="bg-white rounded-lg shadow-md p-4">
+          {/* Results Header */}
           <div className="flex justify-between items-center mb-3">
+            {/* Results Title */}
             <h2 className="text-lg font-semibold text-gray-800">
               Results ({totalItems} flights)
             </h2>
+
+            {/* Pagination */}
             <span className="text-sm text-gray-500">
               Showing {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}
             </span>
@@ -1413,9 +1393,11 @@ const FlightSearch = () => {
             </div>
           )}
 
+          {/* Flights */}
           <div className={`space-y-3 ${filterLoading ? "opacity-60 pointer-events-none" : ""}`}>
             {paginatedFlights.map((flight, index) => (
               <div key={index} className="border rounded-lg p-4 hover:shadow-md transition">
+                {console.log(flight)}
                 {/* Flight Route & Airline */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                   <div>
