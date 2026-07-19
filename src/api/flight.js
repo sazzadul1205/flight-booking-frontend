@@ -29,7 +29,7 @@ export const searchFlights = async (searchParams) => {
     NoofInfant: parseInt(searchParams.NoofInfant) || 0,
     IsSpecialTexRedumption: searchParams.IsSpecialTexRedumption || false,
     IsFlexSearch: searchParams.IsFlexSearch || false,
-    Flex: searchParams.Flex ?? null, // Use null if not provided
+    Flex: searchParams.Flex ?? null,
     ChildrenAges: Array.isArray(searchParams.ChildrenAges)
       ? searchParams.ChildrenAges
       : [],
@@ -66,6 +66,7 @@ export const filterFlights = async (flights, filter) => {
     `${API_URL}/filter`,
     { flights, filter },
     authConfig(),
+    // console.log("Sending to API:", { flights, filter }),
   );
   return response.data;
 };

@@ -55,7 +55,7 @@ export const useAuth = () => {
       localStorage.setItem("user", JSON.stringify(loginData.user));
       queryClient.invalidateQueries(["profile"]);
 
-      // Redirect to dashboard
+      // Redirect to Search
       navigate("/search");
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message;
