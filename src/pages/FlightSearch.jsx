@@ -6,6 +6,7 @@ import {
   getAirlines,
   filterFlights,
 } from "../api/flight";
+import FlightFilters from "../components/FlightFilters";
 
 const FlightSearch = () => {
   const [flights, setFlights] = useState([]);
@@ -14,6 +15,9 @@ const FlightSearch = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [filterLoading, setFilterLoading] = useState(false);
   const [filteredFlights, setFilteredFlights] = useState([]);
+
+  // Store filter options from API
+  const [filterOptions, setFilterOptions] = useState(null);
 
   // PAGINATION STATE
   const [currentPage, setCurrentPage] = useState(1);
@@ -47,8 +51,6 @@ const FlightSearch = () => {
   }, [flights, filteredFlights]);
 
   // AIRLINE DROPDOWN STATE
-  const [airlineSearch, setAirlineSearch] = useState("");
-  const [showAirlineDropdown, setShowAirlineDropdown] = useState(false);
   const [selectedAirlines, setSelectedAirlines] = useState([]);
 
   // FLIGHT SEARCH STATE
@@ -102,17 +104,6 @@ const FlightSearch = () => {
   const [citySuggestions, setCitySuggestions] = useState([]);
   const [cityLoading, setCityLoading] = useState(false);
 
-  // TIME RANGE OPTIONS
-  const timeRanges = [
-    { name: "00:00 To 05:59" },
-    { name: "06:00 To 11:59" },
-    { name: "12:00 To 17:59" },
-    { name: "18:00 To 23:59" },
-  ];
-
-  // STOP OPTIONS
-  const stopOptions = [0, 1, 2, 3];
-
   // LOAD AIRLINES ON MOUNT
   useEffect(() => {
     const loadAirlines = async () => {
@@ -126,13 +117,6 @@ const FlightSearch = () => {
     loadAirlines();
   }, []);
 
-  // Log flight states
-  // useEffect(() => {
-  //   console.log("Flights:", flights.length);
-  //   console.log("Filtered Flights:", filteredFlights.length);
-  //   console.log("Current Flights:", currentFlights.length);
-  // }, [flights, filteredFlights, currentFlights.length]);
-
   // Helper to format milliseconds to hours/minutes
   const formatDuration = (ms) => {
     if (!ms) return "N/A";
@@ -145,7 +129,6 @@ const FlightSearch = () => {
   // Helper to get layover airports from Onwards segments
   const getLayoverAirports = (onwards) => {
     if (!onwards || onwards.length < 2) return [];
-    // The layover airports are the destinations of all segments except the last one
     return onwards.slice(0, -1).map((seg) => seg.Destination);
   };
 
@@ -155,7 +138,6 @@ const FlightSearch = () => {
     let totalMs = 0;
     for (const seg of onwards) {
       if (seg.TravelDuration) {
-        // TravelDuration is like "5h 10m" - parse it
         const parts = seg.TravelDuration.match(/(\d+)h\s*(\d+)m/);
         if (parts) {
           totalMs += parseInt(parts[1]) * 3600000 + parseInt(parts[2]) * 60000;
@@ -164,58 +146,6 @@ const FlightSearch = () => {
     }
     return totalMs;
   };
-
-  // AIRLINE DROPDOWN HANDLERS
-  const handleAirlineSearch = (e) => {
-    const value = e.target.value;
-    setAirlineSearch(value);
-    setShowAirlineDropdown(true);
-  };
-
-  // SELECT AIRLINE
-  const selectAirline = (airline) => {
-    if (selectedAirlines.some((a) => a.ID === airline.ID)) {
-      return;
-    }
-    setSelectedAirlines([...selectedAirlines, airline]);
-    setFilters((prev) => ({
-      ...prev,
-      airlines: [...prev.airlines, airline.AriLineName],
-      airline_code: [...prev.airline_code, airline.Code],
-    }));
-    setAirlineSearch("");
-    setShowAirlineDropdown(false);
-  };
-
-  // REMOVE AIRLINE
-  const removeAirline = (airline) => {
-    setSelectedAirlines(selectedAirlines.filter((a) => a.ID !== airline.ID));
-    setFilters((prev) => ({
-      ...prev,
-      airlines: prev.airlines.filter((name) => name !== airline.AriLineName),
-      airline_code: prev.airline_code.filter((code) => code !== airline.Code),
-    }));
-  };
-
-  const clearAllAirlines = () => {
-    setSelectedAirlines([]);
-    setFilters((prev) => ({
-      ...prev,
-      airlines: [],
-      airline_code: [],
-    }));
-    setAirlineSearch("");
-    setShowAirlineDropdown(false);
-  };
-
-  // FILTERED AIRLINES
-  const filteredAirlines = airlines.filter((airline) => {
-    const searchLower = airlineSearch.toLowerCase();
-    return (
-      airline.Code.toLowerCase().includes(searchLower) ||
-      airline.AriLineName.toLowerCase().includes(searchLower)
-    );
-  });
 
   // HANDLE INPUT CHANGES
   const handleChange = (e) => {
@@ -322,7 +252,13 @@ const FlightSearch = () => {
       const data = await searchFlights(formattedParams);
       const results = data.data || [];
       setFlights(results);
-      setFilteredFlights([]); // Clear filtered results
+      setFilteredFlights([]);
+
+      // Store filter options from API response
+      if (data.filter) {
+        setFilterOptions(data.filter);
+      }
+
       resetFilters();
 
       if (results.length === 0) {
@@ -344,7 +280,7 @@ const FlightSearch = () => {
     }
   };
 
-  // FILTER
+  // FILTER - FIXED VERSION
   const applyFilters = async () => {
     if (flights.length === 0) {
       setSearchError("No flights to filter");
@@ -356,6 +292,21 @@ const FlightSearch = () => {
 
     const filterData = {};
 
+    // Helper to extract values from filter items (handles both objects with name and primitives)
+    const extractFilterValues = (items) => {
+      if (!items || items.length === 0) return [];
+      // If items are objects with name property, extract the name
+      if (
+        typeof items[0] === "object" &&
+        items[0] !== null &&
+        "name" in items[0]
+      ) {
+        return items.map((item) => item.name);
+      }
+      // If items are primitives (strings, numbers), return as is
+      return items;
+    };
+
     // Price range - only include if value is not empty
     if (filters.min_price && filters.min_price !== "") {
       filterData.min_price = parseFloat(filters.min_price);
@@ -364,62 +315,97 @@ const FlightSearch = () => {
       filterData.max_price = parseFloat(filters.max_price);
     }
 
-    // Arrays with values
-    if (filters.fare_type.length > 0) filterData.fare_type = filters.fare_type;
-    if (filters.airlines.length > 0) filterData.airlines = filters.airlines;
-    if (filters.airline_code.length > 0)
-      filterData.airline_code = filters.airline_code;
-    if (filters.aircraft.length > 0) filterData.aircraft = filters.aircraft;
-    if (filters.baggage.length > 0) filterData.baggage = filters.baggage;
+    // Arrays with values - extract names from objects if needed
+    if (filters.fare_type.length > 0) {
+      filterData.fare_type = extractFilterValues(filters.fare_type);
+    }
+    if (filters.airlines.length > 0) {
+      filterData.airlines = extractFilterValues(filters.airlines);
+    }
+    if (filters.airline_code.length > 0) {
+      filterData.airline_code = extractFilterValues(filters.airline_code);
+    }
+    if (filters.aircraft.length > 0) {
+      filterData.aircraft = extractFilterValues(filters.aircraft);
+    }
+    if (filters.baggage.length > 0) {
+      filterData.baggage = extractFilterValues(filters.baggage);
+    }
 
-    // Stops
+    // Stops - already numbers
     if (filters.onward_flight_stops.length > 0) {
-      filterData.onward_flight_stops = filters.onward_flight_stops;
+      filterData.onward_flight_stops = extractFilterValues(
+        filters.onward_flight_stops,
+      );
     }
     if (filters.return_flight_stops.length > 0) {
-      filterData.return_flight_stops = filters.return_flight_stops;
+      filterData.return_flight_stops = extractFilterValues(
+        filters.return_flight_stops,
+      );
     }
 
-    // Time ranges
+    // Time ranges - extract names from objects
     if (filters.onward_depart_time.length > 0) {
-      filterData.onward_depart_time = filters.onward_depart_time;
+      filterData.onward_depart_time = extractFilterValues(
+        filters.onward_depart_time,
+      );
     }
     if (filters.onward_arrival_time.length > 0) {
-      filterData.onward_arrival_time = filters.onward_arrival_time;
+      filterData.onward_arrival_time = extractFilterValues(
+        filters.onward_arrival_time,
+      );
     }
     if (filters.onward_flying_time.length > 0) {
-      filterData.onward_flying_time = filters.onward_flying_time;
+      filterData.onward_flying_time = extractFilterValues(
+        filters.onward_flying_time,
+      );
     }
     if (filters.onward_transit_hour.length > 0) {
-      filterData.onward_transit_hour = filters.onward_transit_hour;
+      filterData.onward_transit_hour = extractFilterValues(
+        filters.onward_transit_hour,
+      );
     }
     if (filters.return_depart_time.length > 0) {
-      filterData.return_depart_time = filters.return_depart_time;
+      filterData.return_depart_time = extractFilterValues(
+        filters.return_depart_time,
+      );
     }
     if (filters.return_arrival_time.length > 0) {
-      filterData.return_arrival_time = filters.return_arrival_time;
+      filterData.return_arrival_time = extractFilterValues(
+        filters.return_arrival_time,
+      );
     }
     if (filters.return_flying_time.length > 0) {
-      filterData.return_flying_time = filters.return_flying_time;
+      filterData.return_flying_time = extractFilterValues(
+        filters.return_flying_time,
+      );
     }
     if (filters.return_transit_hour.length > 0) {
-      filterData.return_transit_hour = filters.return_transit_hour;
+      filterData.return_transit_hour = extractFilterValues(
+        filters.return_transit_hour,
+      );
     }
 
-    // Airport filters
+    // Airport filters - already strings
     if (filters.onward_layover_airport.length > 0) {
-      filterData.onward_layover_airport = filters.onward_layover_airport;
+      filterData.onward_layover_airport = extractFilterValues(
+        filters.onward_layover_airport,
+      );
     }
     if (filters.onward_destination_airport.length > 0) {
-      filterData.onward_destination_airport =
-        filters.onward_destination_airport;
+      filterData.onward_destination_airport = extractFilterValues(
+        filters.onward_destination_airport,
+      );
     }
     if (filters.return_layover_airport.length > 0) {
-      filterData.return_layover_airport = filters.return_layover_airport;
+      filterData.return_layover_airport = extractFilterValues(
+        filters.return_layover_airport,
+      );
     }
     if (filters.return_destination_airport.length > 0) {
-      filterData.return_destination_airport =
-        filters.return_destination_airport;
+      filterData.return_destination_airport = extractFilterValues(
+        filters.return_destination_airport,
+      );
     }
 
     // If no filters are selected, show all flights
@@ -433,18 +419,15 @@ const FlightSearch = () => {
     console.log("Sending to backend:", {
       flightsCount: flights.length,
       filterData,
+      originalFilters: filters,
     });
 
     try {
       const response = await filterFlights(flights, filterData);
-      // console.log("Filter response:", response);
-
-      // Set filtered flights
       const filtered = response.data || [];
       setFilteredFlights(filtered);
       setCurrentPage(1);
 
-      // Show message if no results
       if (filtered.length === 0) {
         setSearchError("No flights match your filter criteria");
       } else {
@@ -487,72 +470,15 @@ const FlightSearch = () => {
       return_destination_airport: [],
     });
     setSelectedAirlines([]);
-    setAirlineSearch("");
-    setShowAirlineDropdown(false);
     setFilteredFlights([]);
     setCurrentPage(1);
     setSearchError("");
-  };
-
-  // TOGGLE HELPERS
-  const toggleArrayValue = (array, value) => {
-    return array.includes(value)
-      ? array.filter((item) => item !== value)
-      : [...array, value];
-  };
-
-  // TOGGLE TIME RANGES
-  const toggleTimeRange = (filterKey, time) => {
-    setFilters((prev) => ({
-      ...prev,
-      [filterKey]: toggleArrayValue(prev[filterKey], time),
-    }));
-  };
-
-  // TOGGLE STOPS
-  const toggleStop = (filterKey, stop) => {
-    setFilters((prev) => ({
-      ...prev,
-      [filterKey]: toggleArrayValue(prev[filterKey], stop),
-    }));
-  };
-
-  // TOGGLE FARE TYPE
-  const toggleFareType = (type) => {
-    setFilters((prev) => ({
-      ...prev,
-      fare_type: toggleArrayValue(prev.fare_type, type),
-    }));
   };
 
   // GET AIRLINE NAME
   const getAirlineName = (code) => {
     const airline = airlines.find((a) => a.Code === code);
     return airline?.AriLineName || code;
-  };
-
-  // PAGINATION HANDLERS
-  const goToPage = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-      document
-        .getElementById("flight-results")
-        ?.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
-  // Go to previous page
-  const goToPreviousPage = () => {
-    if (currentPage > 1) {
-      goToPage(currentPage - 1);
-    }
-  };
-
-  // Go to next page
-  const goToNextPage = () => {
-    if (currentPage < totalPages) {
-      goToPage(currentPage + 1);
-    }
   };
 
   // COUNT ACTIVE FILTERS
@@ -565,6 +491,28 @@ const FlightSearch = () => {
       else if (typeof value === "number" && value > 0) count++;
     });
     return count;
+  };
+
+  // PAGINATION HANDLERS
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      document
+        .getElementById("flight-results")
+        ?.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      goToPage(currentPage - 1);
+    }
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      goToPage(currentPage + 1);
+    }
   };
 
   // RENDER PAGINATION
@@ -673,14 +621,11 @@ const FlightSearch = () => {
     <div className="space-y-4">
       {/* SEARCH FORM - Full width at top */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        {/* Heading */}
         <h2 className="text-lg font-semibold text-gray-800 mb-4">
           Search Flights
         </h2>
 
-        {/* Search Form */}
         <form onSubmit={handleSearch}>
-          {/* Origin, Destination, Date */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Origin */}
             <div className="relative">
@@ -885,14 +830,12 @@ const FlightSearch = () => {
             </div>
           </div>
 
-          {/* Search Error */}
           {searchError && (
             <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">
               {searchError}
             </div>
           )}
 
-          {/* Search Button */}
           <button
             type="submit"
             disabled={loading}
@@ -903,7 +846,7 @@ const FlightSearch = () => {
         </form>
       </div>
 
-      {/* RESULTS & FILTERS - Side by side */}
+      {/* RESULTS & FILTERS */}
       {flights.length > 0 && (
         <div className="flex flex-col lg:flex-row gap-4">
           {/* LEFT COLUMN - Flight Results */}
@@ -912,14 +855,10 @@ const FlightSearch = () => {
               id="flight-results"
               className="bg-white rounded-lg shadow-md p-4"
             >
-              {/* Results Header */}
               <div className="flex justify-between items-center mb-3">
-                {/* Results Title */}
                 <h2 className="text-lg font-semibold text-gray-800">
                   Results ({totalItems} flights)
                 </h2>
-
-                {/* Pagination */}
                 <span className="text-sm text-gray-500">
                   Showing {(currentPage - 1) * itemsPerPage + 1} -{" "}
                   {Math.min(currentPage * itemsPerPage, totalItems)} of{" "}
@@ -927,7 +866,6 @@ const FlightSearch = () => {
                 </span>
               </div>
 
-              {/* Filter Loading Overlay */}
               {filterLoading && (
                 <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm flex items-center gap-2">
                   <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
@@ -950,12 +888,10 @@ const FlightSearch = () => {
                 </div>
               )}
 
-              {/* Flights */}
               <div
                 className={`space-y-3 ${filterLoading ? "opacity-60 pointer-events-none" : ""}`}
               >
                 {paginatedFlights.map((flight, index) => {
-                  // Extract data for display
                   const onwardSegments = flight.Onwards || [];
                   const returnSegments = flight.Returns || [];
                   const totalTravel = flight.TotalTravelTimes?.[0] || {};
@@ -1229,12 +1165,9 @@ const FlightSearch = () => {
               {/* Pagination Controls */}
               {totalPages > 1 && (
                 <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-3 pt-3 border-t border-gray-200">
-                  {/* Page Info */}
                   <span className="text-sm text-gray-500">
                     Page {currentPage} of {totalPages}
                   </span>
-
-                  {/* Pagination */}
                   <div className="flex flex-wrap gap-1">
                     {renderPagination()}
                   </div>
@@ -1294,369 +1227,19 @@ const FlightSearch = () => {
               </div>
 
               <div
-                className={`${showFilters ? "block" : "hidden lg:block"} space-y-4 max-h-150 overflow-y-auto pr-2`}
+                className={`${showFilters ? "block" : "hidden lg:block"} max-h-150 overflow-y-auto pr-2`}
               >
-                {/* Price Range */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Min Price
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="Min"
-                      value={filters.min_price}
-                      onChange={(e) =>
-                        setFilters({ ...filters, min_price: e.target.value })
-                      }
-                      disabled={filterLoading}
-                      className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm disabled:bg-gray-100"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Max Price
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="Max"
-                      value={filters.max_price}
-                      onChange={(e) =>
-                        setFilters({ ...filters, max_price: e.target.value })
-                      }
-                      disabled={filterLoading}
-                      className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm disabled:bg-gray-100"
-                    />
-                  </div>
-                </div>
-
-                {/* Fare Type */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Fare Type
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {["Refundable", "Non-Refundable"].map((type) => (
-                      <button
-                        key={type}
-                        onClick={() => !filterLoading && toggleFareType(type)}
-                        disabled={filterLoading}
-                        className={`px-3 py-1 rounded-lg text-xs border transition-colors ${
-                          filters.fare_type.includes(type)
-                            ? "bg-blue-600 text-white border-blue-600"
-                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                        } ${filterLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-                      >
-                        {type}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Airlines */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Airlines ({selectedAirlines.length} selected)
-                  </label>
-                  <div className="relative">
-                    <div className="flex">
-                      <input
-                        type="text"
-                        value={airlineSearch}
-                        onChange={handleAirlineSearch}
-                        onFocus={() => {
-                          if (airlines.length > 0 && airlineSearch.length > 0) {
-                            setShowAirlineDropdown(true);
-                          }
-                        }}
-                        disabled={filterLoading}
-                        placeholder="Search airline..."
-                        className="flex-1 px-3 py-1.5 border border-gray-300 rounded-l-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm disabled:bg-gray-100"
-                      />
-                      {selectedAirlines.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={clearAllAirlines}
-                          disabled={filterLoading}
-                          className="px-3 py-1.5 bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg hover:bg-gray-200 text-gray-600 text-sm disabled:opacity-50"
-                        >
-                          Clear All
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Selected Airlines Tags */}
-                    {selectedAirlines.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {selectedAirlines.map((airline) => (
-                          <span
-                            key={airline.ID}
-                            className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs flex items-center gap-1"
-                          >
-                            {airline.Code}
-                            <button
-                              onClick={() =>
-                                !filterLoading && removeAirline(airline)
-                              }
-                              disabled={filterLoading}
-                              className="hover:text-red-600 ml-1 disabled:opacity-50"
-                            >
-                              ✕
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Airline Dropdown */}
-                    {showAirlineDropdown &&
-                      filteredAirlines.length > 0 &&
-                      !filterLoading && (
-                        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-auto">
-                          {filteredAirlines.slice(0, 20).map((airline) => {
-                            const isSelected = selectedAirlines.some(
-                              (a) => a.ID === airline.ID,
-                            );
-                            return (
-                              <div
-                                key={airline.ID}
-                                onClick={() => {
-                                  if (!isSelected) {
-                                    selectAirline(airline);
-                                  }
-                                }}
-                                className={`px-3 py-1.5 hover:bg-blue-50 cursor-pointer text-sm flex justify-between items-center ${
-                                  isSelected ? "bg-blue-50 opacity-50" : ""
-                                }`}
-                              >
-                                <div>
-                                  <span className="font-medium text-gray-800">
-                                    {airline.Code}
-                                  </span>
-                                  <span className="text-gray-500 ml-2 text-xs">
-                                    {airline.AriLineName}
-                                  </span>
-                                </div>
-                                {isSelected && (
-                                  <span className="text-blue-600 text-xs">
-                                    ✓ Selected
-                                  </span>
-                                )}
-                              </div>
-                            );
-                          })}
-                          {filteredAirlines.length > 20 && (
-                            <div className="px-3 py-1 text-xs text-gray-400 text-center border-t border-gray-100">
-                              {filteredAirlines.length - 20} more airlines...
-                            </div>
-                          )}
-                          {filteredAirlines.length === 0 && airlineSearch && (
-                            <div className="px-3 py-2 text-sm text-gray-500">
-                              No airlines found
-                            </div>
-                          )}
-                        </div>
-                      )}
-                  </div>
-                </div>
-
-                {/* Onward Stops */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Onward Stops
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {stopOptions.map((stops) => (
-                      <button
-                        key={stops}
-                        onClick={() =>
-                          !filterLoading &&
-                          toggleStop("onward_flight_stops", stops)
-                        }
-                        disabled={filterLoading}
-                        className={`px-3 py-1 rounded-lg text-xs border transition-colors ${
-                          filters.onward_flight_stops.includes(stops)
-                            ? "bg-blue-600 text-white border-blue-600"
-                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                        } ${filterLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-                      >
-                        {stops === 0
-                          ? "Non-stop"
-                          : `${stops} stop${stops > 1 ? "s" : ""}`}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Onward Departure Time */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Onward Departure Time
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {timeRanges.map((time) => (
-                      <button
-                        key={time.name}
-                        onClick={() =>
-                          !filterLoading &&
-                          toggleTimeRange("onward_depart_time", time)
-                        }
-                        disabled={filterLoading}
-                        className={`px-3 py-1 rounded-lg text-xs border transition-colors ${
-                          filters.onward_depart_time.some(
-                            (t) => t.name === time.name,
-                          )
-                            ? "bg-blue-600 text-white border-blue-600"
-                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                        } ${filterLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-                      >
-                        {time.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Onward Arrival Time */}
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Onward Arrival Time
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {timeRanges.map((time) => (
-                      <button
-                        key={time.name}
-                        onClick={() =>
-                          !filterLoading &&
-                          toggleTimeRange("onward_arrival_time", time)
-                        }
-                        disabled={filterLoading}
-                        className={`px-3 py-1 rounded-lg text-xs border transition-colors ${
-                          filters.onward_arrival_time.some(
-                            (t) => t.name === time.name,
-                          )
-                            ? "bg-blue-600 text-white border-blue-600"
-                            : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                        } ${filterLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-                      >
-                        {time.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Return Filters */}
-                {searchParams.JourneyType === 2 && (
-                  <>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Return Stops
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {stopOptions.map((stops) => (
-                          <button
-                            key={stops}
-                            onClick={() =>
-                              !filterLoading &&
-                              toggleStop("return_flight_stops", stops)
-                            }
-                            disabled={filterLoading}
-                            className={`px-3 py-1 rounded-lg text-xs border transition-colors ${
-                              filters.return_flight_stops.includes(stops)
-                                ? "bg-blue-600 text-white border-blue-600"
-                                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                            } ${filterLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-                          >
-                            {stops === 0
-                              ? "Non-stop"
-                              : `${stops} stop${stops > 1 ? "s" : ""}`}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Return Departure Time
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {timeRanges.map((time) => (
-                          <button
-                            key={time.name}
-                            onClick={() =>
-                              !filterLoading &&
-                              toggleTimeRange("return_depart_time", time)
-                            }
-                            disabled={filterLoading}
-                            className={`px-3 py-1 rounded-lg text-xs border transition-colors ${
-                              filters.return_depart_time.some(
-                                (t) => t.name === time.name,
-                              )
-                                ? "bg-blue-600 text-white border-blue-600"
-                                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                            } ${filterLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-                          >
-                            {time.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Return Arrival Time
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {timeRanges.map((time) => (
-                          <button
-                            key={time.name}
-                            onClick={() =>
-                              !filterLoading &&
-                              toggleTimeRange("return_arrival_time", time)
-                            }
-                            disabled={filterLoading}
-                            className={`px-3 py-1 rounded-lg text-xs border transition-colors ${
-                              filters.return_arrival_time.some(
-                                (t) => t.name === time.name,
-                              )
-                                ? "bg-blue-600 text-white border-blue-600"
-                                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                            } ${filterLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-                          >
-                            {time.name}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                <button
-                  onClick={applyFilters}
-                  disabled={filterLoading}
-                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {filterLoading ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                          fill="none"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
-                      </svg>
-                      Applying...
-                    </>
-                  ) : (
-                    "Apply Filters"
-                  )}
-                </button>
+                <FlightFilters
+                  filters={filters}
+                  setFilters={setFilters}
+                  filterOptions={filterOptions}
+                  airlines={airlines}
+                  selectedAirlines={selectedAirlines}
+                  setSelectedAirlines={setSelectedAirlines}
+                  journeyType={searchParams.JourneyType}
+                  filterLoading={filterLoading}
+                  applyFilters={applyFilters}
+                />
               </div>
             </div>
           </div>

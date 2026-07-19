@@ -35,7 +35,7 @@ export const searchFlights = async (searchParams) => {
       : [],
   };
 
-  console.log("Sending to API:", formattedParams);
+  // console.log("Sending to API:", formattedParams);
 
   const response = await axios.post(
     `${API_URL}/flights/search`,
@@ -66,7 +66,7 @@ export const filterFlights = async (flights, filter) => {
     `${API_URL}/filter`,
     { flights, filter },
     authConfig(),
-    // console.log("Sending to API:", { flights, filter }),
+    console.log(filter),
   );
   return response.data;
 };
