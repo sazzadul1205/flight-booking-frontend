@@ -279,8 +279,6 @@ const FlightSearch = () => {
       setLoading(false);
     }
   };
-
-  // FILTER - FIXED VERSION
   const applyFilters = async () => {
     if (flights.length === 0) {
       setSearchError("No flights to filter");
