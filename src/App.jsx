@@ -10,6 +10,7 @@ import Register from "./pages/Register";
 import MarkupCommissionManagement from "./pages/MarkupCommissionManagement";
 import FlightSearch from "./pages/FlightSearch";
 import Layout from "./Layout/Layout";
+import Upload from "./pages/uploads";
 
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -41,7 +42,15 @@ const App = () => {
             </ProtectedRoute>
           }
         />
-        <Route path="*" element={<Navigate to="/search" />} />
+        <Route
+          path="/upload"
+          element={
+            <ProtectedRoute>
+              <Upload />
+            </ProtectedRoute>
+          }
+        />
+        {/* <Route path="*" element={<Navigate to="/search" />} /> */}
       </Routes>
     </Router>
   );
