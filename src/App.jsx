@@ -15,11 +15,11 @@ const App = () => {
     <Router>
       <Routes>
         <Route element={<Layout />}>
-          <Route path="/search" element={<FlightSearch />} />
+          <Route path="/home" element={<FlightSearch />} />
           <Route path="/config" element={<MarkupCommissionManagement />} />
           <Route path="/upload" element={<Upload />} />
         </Route>
-        <Route path="*" element={<Navigate to="/search" />} />
+        <Route path="*" element={<Navigate to="/home" />} />
       </Routes>
     </Router>
   );

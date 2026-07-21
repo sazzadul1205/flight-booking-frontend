@@ -7,16 +7,16 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const getToken = () => localStorage.getItem("token");
 
 // Axios config with auth
-const authConfig = () => ({
+const authConfig = (signal) => ({
   headers: {
     Authorization: `Bearer ${getToken()}`,
     "Content-Type": "application/json",
   },
+  signal, 
 });
 
 // Search flights
 export const searchFlights = async (searchParams) => {
-  // Ensure the field names match what the backend expects
   const formattedParams = {
     JourneyType: parseInt(searchParams.JourneyType) || 1,
     Origin: searchParams.Origin?.toUpperCase().trim() || "",
@@ -35,8 +35,6 @@ export const searchFlights = async (searchParams) => {
       : [],
   };
 
-  // console.log("Sending to API:", formattedParams);
-
   const response = await axios.post(
     `${API_URL}/flights/search`,
     formattedParams,
@@ -45,11 +43,11 @@ export const searchFlights = async (searchParams) => {
   return response.data;
 };
 
-// Get cities
-export const getCities = async (query) => {
+// Get cities - added signal support
+export const getCities = async (query, signal) => {
   const response = await axios.get(
     `${API_URL}/cities?input=${query}`,
-    authConfig(),
+    authConfig(signal),
   );
   return response.data;
 };
@@ -66,7 +64,6 @@ export const filterFlights = async (flights, filter) => {
     `${API_URL}/filter`,
     { flights, filter },
     authConfig(),
-    console.log(filter),
   );
   return response.data;
 };
