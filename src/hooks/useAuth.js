@@ -30,12 +30,13 @@ export const useAuth = () => {
       const data = await login(email, password);
       localStorage.setItem("token", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
-      queryClient.invalidateQueries(["profile"]);
+      await queryClient.invalidateQueries(["profile"]);
       navigate("/search");
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message;
       setError(errorMessage);
       console.error("Login failed:", errorMessage);
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -53,7 +54,7 @@ export const useAuth = () => {
       const loginData = await login(email, password);
       localStorage.setItem("token", loginData.token);
       localStorage.setItem("user", JSON.stringify(loginData.user));
-      queryClient.invalidateQueries(["profile"]);
+      await queryClient.invalidateQueries(["profile"]);
 
       // Redirect to Search
       navigate("/search");
@@ -74,15 +75,18 @@ export const useAuth = () => {
     retry: false,
     onError: () => {
       authLogout();
-      navigate("/login");
+      queryClient.removeQueries(["profile"]);
+      navigate("/");
     },
   });
 
   // Logout function
   const handleLogout = () => {
     authLogout();
-    queryClient.invalidateQueries(["profile"]);
-    navigate("/login");
+    localStorage.removeItem("user");
+    queryClient.removeQueries(["profile"]);
+    setError(null);
+    navigate("/");
   };
 
   // Return
