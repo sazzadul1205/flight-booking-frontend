@@ -1,5 +1,5 @@
-// src/pages/FlightSearch.jsx
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useLocation } from "react-router-dom";
 
 // API
 import { searchFlights, getCities } from "../api/flight";
@@ -10,49 +10,237 @@ import { FaArrowRight } from "react-icons/fa";
 // Components
 import DatePicker from "../components/DatePicker";
 import TravelerClassPicker from "../components/TravelerClassPicker";
+import FlightResults from "../components/FlightResults";
 
-// Helper function to extract city name from SearchString
 const extractCityName = (searchString) => {
   if (!searchString) return "";
   const parts = searchString.split(",");
   return parts.length > 1 ? parts[parts.length - 2].trim() : searchString;
 };
 
-const FlightSearch = () => {
+const formatDateToYYYYMMDD = (day, month, year) => {
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+};
+
+const parseDateFromString = (dateStr) => {
+  if (!dateStr) return null;
+  const parts = dateStr.split("-");
+  if (parts.length !== 3) return null;
+
+  const year = parseInt(parts[0]);
+  const month = parseInt(parts[1]) - 1;
+  const day = parseInt(parts[2]);
+
+  const date = new Date(year, month, day);
+  const dayNames = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
+  return {
+    full: `${day} ${monthNames[month]}'${String(year).slice(-2)}`,
+    dayName: dayNames[date.getDay()],
+    day: day,
+    month: month,
+    year: year,
+  };
+};
+
+// Get today's date formatted (same as Home.jsx)
+const getTodayDate = () => {
+  const today = new Date();
+  const day = today.getDate();
+  const month = today.getMonth();
+  const year = today.getFullYear();
+
+  const dayNames = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
+  return {
+    full: `${day} ${monthNames[month]}'${String(year).slice(-2)}`,
+    dayName: dayNames[today.getDay()],
+    day: day,
+    month: month,
+    year: year,
+  };
+};
+
+// Map city code to display name
+const getCityDisplayName = (cityCode) => {
+  const cityMap = {
+    DAC: "Hazrat Shahjalal International Airport,Dhaka,Bangladesh",
+    CXB: "CXB, Coxs Bazar Airport,Coxs Bazar,Bangladesh",
+  };
+  return cityMap[cityCode] || `${cityCode}, Airport,City,Country`;
+};
+
+const Search = () => {
+  const location = useLocation();
+
+  const queryParams = useMemo(
+    () => new URLSearchParams(location.search),
+    [location.search],
+  );
+
+  // Extract URL params
+  const urlOrigin = queryParams.get("origin") || "DAC";
+  const urlDestination = queryParams.get("destination") || "CXB";
+  const urlDepartureDate = queryParams.get("departureDate") || "";
+  const urlReturnDate = queryParams.get("returnDate") || "";
+  const urlClassType = queryParams.get("classType") || "Economy";
+  const urlNoOfAdult = parseInt(queryParams.get("noOfAdult")) || 1;
+  const urlNoOfChildren = parseInt(queryParams.get("noOfChildren")) || 0;
+  const urlNoOfInfant = parseInt(queryParams.get("noOfInfant")) || 0;
+  const urlJourneyType = parseInt(queryParams.get("journeyType")) || 1;
+
+  // Use today's date as fallback
+  const todayDate = getTodayDate();
+
+  // Parse date from URL or use today's date
+  const parsedDate = urlDepartureDate
+    ? parseDateFromString(urlDepartureDate)
+    : null;
+
   const [searchParams, setSearchParams] = useState({
-    JourneyType: 1,
-    Origin: "DAC",
-    Destination: "CXB",
-    DepartureDate: "",
-    ReturnDate: "",
-    ClassType: "Economy",
-    NoofAdult: 1,
-    NoofChildren: 0,
-    NoofInfant: 0,
+    JourneyType: urlJourneyType,
+    Origin: urlOrigin,
+    Destination: urlDestination,
+    DepartureDate:
+      urlDepartureDate ||
+      formatDateToYYYYMMDD(todayDate.day, todayDate.month, todayDate.year),
+    ReturnDate: urlReturnDate || "",
+    ClassType: urlClassType,
+    NoofAdult: urlNoOfAdult,
+    NoofChildren: urlNoOfChildren,
+    NoofInfant: urlNoOfInfant,
     Flex: null,
   });
 
   const [displayOrigin, setDisplayOrigin] = useState(
-    "Hazrat Shahjalal International Airport,Dhaka,Bangladesh",
+    getCityDisplayName(urlOrigin),
+  );
+  const [displayDestination, setDisplayDestination] = useState(
+    getCityDisplayName(urlDestination),
   );
 
-  const [displayDestination, setDisplayDestination] = useState(
-    "CXB, Coxs Bazar Airport,Coxs Bazar,Bangladesh",
-  );
+  // Set initial date - use URL date if available, otherwise today
+  const [selectedDate, setSelectedDate] = useState(parsedDate || todayDate);
+
+  const [travelerSelection, setTravelerSelection] = useState({
+    adults: urlNoOfAdult,
+    children: urlNoOfChildren,
+    infants: urlNoOfInfant,
+    classType: urlClassType,
+  });
 
   // Traveler Selection
   const [searchInput, setSearchInput] = useState("");
   const [activeField, setActiveField] = useState(null);
   const [cityLoading, setCityLoading] = useState(false);
   const [citySuggestions, setCitySuggestions] = useState([]);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTravelerPicker, setShowTravelerPicker] = useState(false);
+  const [flights, setFlights] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searchError, setSearchError] = useState("");
 
   // Refs
   const dropdownRef = useRef(null);
   const abortControllerRef = useRef(null);
   const debounceTimeoutRef = useRef(null);
+  const isInitialMount = useRef(true);
 
-  // Sort cities by relevance to search query
-  const sortCitiesByRelevance = (cities, query) => {
+  const formatSearchParams = useCallback(() => {
+    let departureDate = searchParams.DepartureDate;
+    if (!departureDate && selectedDate) {
+      departureDate = formatDateToYYYYMMDD(
+        selectedDate.day,
+        selectedDate.month,
+        selectedDate.year,
+      );
+    }
+
+    return {
+      JourneyType: searchParams.JourneyType || 1,
+      Origin: searchParams.Origin,
+      Destination: searchParams.Destination,
+      DepartureDate: departureDate,
+      ReturnDate: searchParams.ReturnDate || "",
+      ClassType: travelerSelection.classType || "Economy",
+      NoofAdult: travelerSelection.adults || 1,
+      NoofChildren: travelerSelection.children || 0,
+      NoofInfant: travelerSelection.infants || 0,
+      IsSpecialTexRedumption: false,
+      IsFlexSearch: false,
+      Flex: null,
+      ChildrenAges: [],
+    };
+  }, [searchParams, selectedDate, travelerSelection]);
+
+  const performSearch = useCallback(async (formattedParams) => {
+    setLoading(true);
+    setSearchError("");
+
+    try {
+      const data = await searchFlights(formattedParams);
+      setFlights(data.data || []);
+
+      if (data.data?.length === 0) {
+        setSearchError("No flights found for your search criteria");
+      }
+    } catch (error) {
+      console.error("Search error:", error);
+      setSearchError(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          "Failed to search flights. Please try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const sortCitiesByRelevance = useCallback((cities, query) => {
     const searchLower = query.toLowerCase().trim();
 
     return cities
@@ -100,51 +288,45 @@ const FlightSearch = () => {
 
         return { ...city, score };
       })
-      .sort((a, b) => b.score - a.score)
-      .filter((city) => city.score > 0);
-  };
-
-  // Perform the actual city search
-  const performCitySearch = useCallback(async (query) => {
-    if (query.length <= 1) {
-      setCitySuggestions([]);
-      return;
-    }
-
-    // Cancel previous request
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    setCityLoading(true);
-    try {
-      const data = await getCities(query, controller.signal);
-
-      // Sort results by relevance
-      const sortedData = sortCitiesByRelevance(data.data || [], query);
-      setCitySuggestions(sortedData);
-    } catch (error) {
-      if (error.name !== "AbortError" && error.code !== "ERR_CANCELED") {
-        console.error("City search error:", error);
-        setCitySuggestions([]);
-      }
-    } finally {
-      setCityLoading(false);
-    }
+      .sort((a, b) => b.score - a.score);
   }, []);
 
-  // Debounced version of the search
+  const performCitySearch = useCallback(
+    async (query) => {
+      if (query.length <= 1) {
+        setCitySuggestions([]);
+        return;
+      }
+
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      setCityLoading(true);
+      try {
+        const data = await getCities(query, controller.signal);
+        const sortedData = sortCitiesByRelevance(data.data || [], query);
+        setCitySuggestions(sortedData);
+      } catch (error) {
+        if (error.name !== "AbortError" && error.code !== "ERR_CANCELED") {
+          console.error("City search error:", error);
+          setCitySuggestions([]);
+        }
+      } finally {
+        setCityLoading(false);
+      }
+    },
+    [sortCitiesByRelevance],
+  );
+
   const debouncedCitySearch = useCallback(
     (query) => {
-      // Clear any existing timeout
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current);
       }
-
-      // Set new timeout
       debounceTimeoutRef.current = setTimeout(() => {
         performCitySearch(query);
       }, 300);
@@ -152,7 +334,32 @@ const FlightSearch = () => {
     [performCitySearch],
   );
 
-  // Handle outside click
+  // Auto-trigger search on mount if URL has params
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+
+      // If there are URL params, trigger search
+      const hasSearchParams = queryParams.toString().length > 0;
+
+      if (hasSearchParams) {
+        // Small delay to ensure all states are properly set
+        setTimeout(() => {
+          const formattedParams = formatSearchParams();
+
+          // Only trigger if we have the minimum required params
+          if (
+            formattedParams.Origin &&
+            formattedParams.Destination &&
+            formattedParams.DepartureDate
+          ) {
+            performSearch(formattedParams);
+          }
+        }, 500);
+      }
+    }
+  }, [queryParams, formatSearchParams, performSearch]);
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -202,23 +409,6 @@ const FlightSearch = () => {
     setCitySuggestions([]);
   };
 
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState({
-    full: "19 Jul'26",
-    dayName: "Wednesday",
-    day: 19,
-    month: 6,
-    year: 2026,
-  });
-
-  const [showTravelerPicker, setShowTravelerPicker] = useState(false);
-  const [travelerSelection, setTravelerSelection] = useState({
-    adults: 1,
-    children: 0,
-    infants: 0,
-    classType: "Economy",
-  });
-
   const handleTravelerChange = (data) => {
     setTravelerSelection(data);
     setSearchParams({
@@ -238,41 +428,6 @@ const FlightSearch = () => {
     return total === 0
       ? "0 Traveler"
       : `${total} Traveler${total > 1 ? "s" : ""}`;
-  };
-
-  const [loading, setLoading] = useState(false);
-  const [searchError, setSearchError] = useState("");
-  const [flights, setFlights] = useState([]);
-
-  const formatDateToYYYYMMDD = (day, month, year) => {
-    return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-  };
-
-  const formatSearchParams = () => {
-    let departureDate = searchParams.DepartureDate;
-    if (!departureDate && selectedDate) {
-      departureDate = formatDateToYYYYMMDD(
-        selectedDate.day,
-        selectedDate.month,
-        selectedDate.year,
-      );
-    }
-
-    return {
-      JourneyType: searchParams.JourneyType || 1,
-      Origin: searchParams.Origin,
-      Destination: searchParams.Destination,
-      DepartureDate: departureDate,
-      ReturnDate: searchParams.ReturnDate || "",
-      ClassType: travelerSelection.classType || "Economy",
-      NoofAdult: travelerSelection.adults || 1,
-      NoofChildren: travelerSelection.children || 0,
-      NoofInfant: travelerSelection.infants || 0,
-      IsSpecialTexRedumption: false,
-      IsFlexSearch: false,
-      Flex: null,
-      ChildrenAges: [],
-    };
   };
 
   const handleSearch = async (e) => {
@@ -302,41 +457,8 @@ const FlightSearch = () => {
       return;
     }
 
-    setLoading(true);
-    try {
-      const formattedParams = formatSearchParams();
-
-      const queryParams = new URLSearchParams({
-        journeyType: formattedParams.JourneyType,
-        origin: formattedParams.Origin,
-        destination: formattedParams.Destination,
-        departureDate: formattedParams.DepartureDate,
-        returnDate: formattedParams.ReturnDate,
-        classType: formattedParams.ClassType,
-        noOfAdult: formattedParams.NoOfAdult,
-        noOfChildren: formattedParams.NoOfChildren,
-        noOfInfant: formattedParams.NoOfInfant,
-      });
-
-      const searchUrl = `/search?${queryParams.toString()}`;
-      console.log("Search URL:", searchUrl);
-      console.log("Formatted Params:", formattedParams);
-
-      const data = await searchFlights(formattedParams);
-      setFlights(data.data || []);
-      if (data.data?.length === 0) {
-        setSearchError("No flights found for your search criteria");
-      }
-    } catch (error) {
-      console.error("Search error:", error);
-      setSearchError(
-        error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Failed to search flights. Please try again.",
-      );
-    } finally {
-      setLoading(false);
-    }
+    const formattedParams = formatSearchParams();
+    await performSearch(formattedParams);
   };
 
   const handleDateSelect = (date) => {
@@ -349,21 +471,14 @@ const FlightSearch = () => {
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center"
-      style={{
-        backgroundImage:
-          'url("https://images.unsplash.com/photo-1436491865332-7a61a109cc05?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2074&q=80")',
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      <div className="bg-white max-w-5xl p-6 rounded-2xl shadow-2xl w-full mx-4">
+    <div className="min-h-screen bg-gray-200">
+      <div className="bg-white p-6 max-w-full w-full pt-24">
+        {/* Search Form */}
         <div className="flex items-center gap-2">
-          <div className="flex-1 relative flex items-center gap-2">
+          <div className="flex-1 relative flex items-stretch gap-2">
             <div className="relative flex-1">
               <div
-                className="bg-white hover:bg-blue-50/90 rounded-xl p-3 shadow-md hover:shadow-xl border border-blue-100 hover:border-blue-200 cursor-pointer"
+                className="bg-white hover:bg-blue-50/90 rounded-xl p-3 shadow-md hover:shadow-xl border border-blue-100 hover:border-blue-200 cursor-pointer h-full"
                 onClick={() => openDropdown("Origin")}
               >
                 <span className="text-[10px] font-semibold text-blue-500 uppercase tracking-wider">
@@ -375,7 +490,7 @@ const FlightSearch = () => {
                 </h1>
 
                 <p
-                  className="text-[11px] text-blue-600 truncate max-w-50 "
+                  className="text-[11px] text-blue-600 truncate max-w-50"
                   title={displayOrigin}
                 >
                   {displayOrigin}
@@ -447,7 +562,7 @@ const FlightSearch = () => {
 
             <div className="relative flex-1">
               <div
-                className="bg-white hover:bg-blue-50/90 rounded-xl p-3 shadow-md hover:shadow-xl border border-blue-100 hover:border-blue-200 cursor-pointer"
+                className="bg-white hover:bg-blue-50/90 rounded-xl p-3 shadow-md hover:shadow-xl border border-blue-100 hover:border-blue-200 cursor-pointer h-full"
                 onClick={() => openDropdown("Destination")}
               >
                 <span className="text-[10px] font-semibold text-blue-500 uppercase tracking-wider pl-2">
@@ -457,7 +572,7 @@ const FlightSearch = () => {
                   {extractCityName(displayDestination)}
                 </h1>
                 <p
-                  className="text-[11px] text-blue-600 truncate pl-2"
+                  className="text-[11px] text-blue-600 truncate pl-2 max-w-50"
                   title={displayDestination}
                 >
                   {displayDestination}
@@ -517,9 +632,10 @@ const FlightSearch = () => {
               )}
             </div>
           </div>
-          <div className="relative flex-1 max-w-54">
+
+          <div className="relative flex-1 max-w-50">
             <div
-              className="bg-white hover:bg-blue-50/90 rounded-xl p-3 shadow-md hover:shadow-xl border border-blue-100 hover:border-blue-200 cursor-pointer transition-all"
+              className="bg-white hover:bg-blue-50/90 rounded-xl p-3 shadow-md hover:shadow-xl border border-blue-100 hover:border-blue-200 cursor-pointer transition-all h-full"
               onClick={() => setShowDatePicker(!showDatePicker)}
             >
               <span className="text-[10px] font-semibold text-blue-500 uppercase tracking-wider">
@@ -548,7 +664,7 @@ const FlightSearch = () => {
             )}
           </div>
 
-          <div className="flex-1 relative bg-white hover:bg-blue-50/90 rounded-xl p-3 shadow-md hover:shadow-xl border border-blue-100 hover:border-blue-200 cursor-pointer max-w-54">
+          <div className="flex-1 relative bg-white hover:bg-blue-50/90 rounded-xl p-3 shadow-md hover:shadow-xl border border-blue-100 hover:border-blue-200 cursor-pointer max-w-50 h-full">
             <div onClick={() => setShowTravelerPicker(!showTravelerPicker)}>
               <span className="text-[10px] font-semibold text-blue-500 uppercase tracking-wider">
                 Traveler, Class
@@ -569,6 +685,14 @@ const FlightSearch = () => {
               />
             )}
           </div>
+
+          <button
+            onClick={handleSearch}
+            disabled={loading}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-8 rounded-xl shadow-lg transition-colors disabled:opacity-50 h-full flex items-center justify-center min-w-30"
+          >
+            {loading ? "Searching..." : "Search Flights"}
+          </button>
         </div>
 
         {searchError && (
@@ -577,26 +701,61 @@ const FlightSearch = () => {
           </div>
         )}
 
-        <div className="mt-6 flex justify-center">
-          <button
-            onClick={handleSearch}
-            disabled={loading}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-full shadow-lg transition-colors disabled:opacity-50"
-          >
-            {loading ? "Searching..." : "Search Flights"}
-          </button>
-        </div>
-
-        {flights.length > 0 && (
-          <div className="mt-6">
-            <h3 className="font-semibold text-gray-700">
-              Found {flights.length} flights
-            </h3>
+        {loading && (
+          <div className="mt-4 text-blue-500 text-sm text-center">
+            Searching for flights...
           </div>
         )}
       </div>
+
+      {flights.length > 0 && (
+        <div className="flex items-start gap-2 px-5 mt-5">
+          <div className="w-1/3 bg-white rounded-lg shadow-lg border border-gray-100 sticky top-4 h-fit max-h-[calc(100vh-2rem)] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-gray-200">
+              <h1 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                <svg
+                  className="w-5 h-5 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                  />
+                </svg>
+                Filters
+              </h1>
+              <button
+                onClick={() => {
+                  /* Clear filters logic */
+                }}
+                className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
+              >
+                Clear All
+              </button>
+            </div>
+
+            {/* Filter Content */}
+            <div className="p-5 space-y-6">
+
+              {/* Apply Filters Button */}
+              <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors shadow-sm hover:shadow-md">
+                Apply Filters
+              </button>
+            </div>
+
+          </div>
+          <div className="w-2/3">
+            <FlightResults flights={flights} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default FlightSearch;
+export default Search;

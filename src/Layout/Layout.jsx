@@ -28,7 +28,7 @@ const Layout = () => {
             <div className="w-9 h-9 bg-linear-to-br from-blue-600 to-blue-400 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-md group-hover:shadow-lg transition-shadow">
               ✈️
             </div>
-            <h1 className="text-white text-2xl font-bold tracking-tight">
+            <h1 className="text-black text-2xl font-bold tracking-tight">
               Sazz<span className="text-blue-300">Air</span>
             </h1>
           </a>
@@ -62,7 +62,7 @@ const Layout = () => {
                 </span>
                 <button
                   onClick={handleLogout}
-                  className="px-5 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer"
+                  className="px-5 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 shadow-xl hover:shadow-lg transition-all duration-200 cursor-pointer"
                 >
                   Logout
                 </button>
@@ -70,7 +70,7 @@ const Layout = () => {
             ) : (
               <button
                 onClick={() => setIsLoginModalOpen(true)}
-                className="px-5 py-2 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer"
+                className="px-5 py-2 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 shadow-xl hover:shadow-lg transition-all duration-200 cursor-pointer"
               >
                 Sign In
               </button>
