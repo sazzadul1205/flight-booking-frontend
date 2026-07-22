@@ -195,13 +195,23 @@ const FlightResults = ({ flights, loading, error, onRetry }) => {
   return (
     <div className="space-y-5">
       {flights.map((flight, index) => {
-        const onward = flight.Onwards?.[0];
+        const segments = flight.Onwards || [];
+        const firstSegment = segments[0];
+        const lastSegment = segments[segments.length - 1];
+
+        // Use first segment for origin info, last segment for destination info
+        const originData = firstSegment;
+        const destinationData = lastSegment;
+
         const fare = flight.FareBreakdown?.[0];
         const totalTime = flight.TotalTravelTimes?.[0];
         const isExpanded = expandedIndex === index;
         const brandedFareInfo = flight.BrandedFareInfoes?.[0];
 
-        if (!onward) return null;
+        if (!originData || !destinationData) return null;
+
+        // Determine if this is a multi-segment flight
+        const isMultiSegment = segments.length > 1;
 
         return (
           <div
@@ -230,35 +240,40 @@ const FlightResults = ({ flights, loading, error, onRetry }) => {
             >
               {/* Airline and Route Section */}
               <div className="flex items-center justify-between gap-5 mb-3">
-                {/* Airline and Flight Number */}
+                {/* Airline and Flight Number - Show first airline */}
                 <div className="flex items-center gap-2 min-w-30">
                   <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg border-2 border-white shrink-0">
                     <MdFlight className="text-white text-xl" />
                   </div>
                   <div className="min-w-0">
                     <h1 className="font-semibold text-gray-800 truncate max-w-30">
-                      {onward.CarrierName || "Airline"}
+                      {originData.CarrierName || "Airline"}
                     </h1>
                     <p className="text-xs text-gray-500">
-                      {onward.Carrier}
-                      {onward.FlightNumber}
+                      {originData.Carrier}
+                      {originData.FlightNumber}
+                      {isMultiSegment && (
+                        <span className="text-blue-500 ml-1">
+                          +{segments.length - 1} more
+                        </span>
+                      )}
                     </p>
                   </div>
                 </div>
 
                 {/* Flight Details */}
                 <div className="flex items-center justify-center px-4 py-2 flex-1">
-                  {/* Origin */}
+                  {/* Origin - Use first segment */}
                   <div className="text-right min-w-20">
                     <p className="text-xs text-gray-500 font-medium">From</p>
                     <p className="text-xl font-bold text-blue-600">
-                      {onward.Origin}
+                      {originData.Origin}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {formatTime(onward.DepartureTime)}
+                      {formatTime(originData.DepartureTime)}
                     </p>
                     <p className="text-xs text-gray-400">
-                      {formatDate(onward.DepartureTime)}
+                      {formatDate(originData.DepartureTime)}
                     </p>
                   </div>
 
@@ -287,17 +302,17 @@ const FlightResults = ({ flights, loading, error, onRetry }) => {
                     </div>
                   </div>
 
-                  {/* Destination */}
+                  {/* Destination - Use last segment */}
                   <div className="text-left min-w-20">
                     <p className="text-xs text-gray-500 font-medium">To</p>
                     <p className="text-xl font-bold text-blue-600">
-                      {onward.Destination}
+                      {destinationData.Destination}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {formatTime(onward.ArrivalTime)}
+                      {formatTime(destinationData.ArrivalTime)}
                     </p>
                     <p className="text-xs text-gray-400">
-                      {formatDate(onward.ArrivalTime)}
+                      {formatDate(destinationData.ArrivalTime)}
                     </p>
                   </div>
                 </div>
@@ -332,14 +347,14 @@ const FlightResults = ({ flights, loading, error, onRetry }) => {
                 <div className="flex items-center gap-1 text-gray-600 min-w-0">
                   <FaUser className="text-blue-400 shrink-0" />
                   <span className="truncate">
-                    {onward.CarrierName || "Airline"}
+                    {originData.CarrierName || "Airline"}
                   </span>
                 </div>
                 <div className="flex items-center gap-1 text-gray-600">
                   <span className="font-medium shrink-0">Flight:</span>
                   <span className="truncate">
-                    {onward.Carrier}
-                    {onward.FlightNumber}
+                    {originData.Carrier}
+                    {originData.FlightNumber}
                   </span>
                 </div>
                 <div className="flex items-center gap-1 text-gray-600">
@@ -348,8 +363,11 @@ const FlightResults = ({ flights, loading, error, onRetry }) => {
                 </div>
                 <div className="flex items-center gap-1 text-gray-600 min-w-0">
                   <FaSuitcase className="text-blue-400 shrink-0" />
-                  <span className="truncate" title={onward.AirBaggageAllowance}>
-                    {truncateText(onward.AirBaggageAllowance, 25) || "N/A"}
+                  <span
+                    className="truncate"
+                    title={originData.AirBaggageAllowance}
+                  >
+                    {truncateText(originData.AirBaggageAllowance, 25) || "N/A"}
                   </span>
                 </div>
               </div>
@@ -374,25 +392,25 @@ const FlightResults = ({ flights, loading, error, onRetry }) => {
                         <span className="text-gray-600">Airline:</span>
                         <span
                           className="font-medium truncate max-w-50"
-                          title={onward.CarrierName}
+                          title={originData.CarrierName}
                         >
-                          {truncateText(onward.CarrierName, 30)}
+                          {truncateText(originData.CarrierName, 30)}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Flight Number:</span>
                         <span className="font-medium">
-                          {onward.Carrier}
-                          {onward.FlightNumber}
+                          {originData.Carrier}
+                          {originData.FlightNumber}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Aircraft:</span>
                         <span
                           className="font-medium truncate max-w-50"
-                          title={onward.Equipment}
+                          title={originData.Equipment}
                         >
-                          {truncateText(onward.Equipment, 25) || "N/A"}
+                          {truncateText(originData.Equipment, 25) || "N/A"}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -401,10 +419,11 @@ const FlightResults = ({ flights, loading, error, onRetry }) => {
                         </span>
                         <span
                           className="font-medium truncate max-w-50"
-                          title={onward.OperatingCarrierName}
+                          title={originData.OperatingCarrierName}
                         >
                           {truncateText(
-                            onward.OperatingCarrierName || onward.CarrierName,
+                            originData.OperatingCarrierName ||
+                              originData.CarrierName,
                             25,
                           )}
                         </span>
@@ -412,31 +431,63 @@ const FlightResults = ({ flights, loading, error, onRetry }) => {
                       <div className="flex justify-between">
                         <span className="text-gray-600">Operating Flight:</span>
                         <span className="font-medium">
-                          {onward.OperatingCarrier}
-                          {onward.OperatingFlightNumber}
+                          {originData.OperatingCarrier}
+                          {originData.OperatingFlightNumber}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Booking Code:</span>
                         <span className="font-medium">
-                          {onward.BookingCode}
+                          {originData.BookingCode}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Booking Count:</span>
                         <span className="font-medium">
-                          {onward.BookingCount}
+                          {originData.BookingCount}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Fare Basis:</span>
                         <span
                           className="font-medium truncate max-w-50"
-                          title={onward.FareBasis}
+                          title={originData.FareBasis}
                         >
-                          {truncateText(onward.FareBasis, 25) || "N/A"}
+                          {truncateText(originData.FareBasis, 25) || "N/A"}
                         </span>
                       </div>
+
+                      {/* Show all segments in expanded view */}
+                      {isMultiSegment && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <h5 className="font-semibold text-gray-600 text-sm mb-2">
+                            All Segments ({segments.length})
+                          </h5>
+                          {segments.map((segment, idx) => (
+                            <div
+                              key={idx}
+                              className="bg-white p-2 rounded border border-gray-200 mb-2 text-xs"
+                            >
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">
+                                  {segment.Origin} → {segment.Destination}
+                                </span>
+                                <span className="font-medium">
+                                  {segment.Carrier}
+                                  {segment.FlightNumber}
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-gray-500">
+                                <span>
+                                  {formatTime(segment.DepartureTime)} -{" "}
+                                  {formatTime(segment.ArrivalTime)}
+                                </span>
+                                <span>{segment.TravelDuration}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -569,8 +620,14 @@ const FlightResults = ({ flights, loading, error, onRetry }) => {
                   </div>
                   <div>
                     <span className="font-medium">Currency:</span>{" "}
-                    {onward.Currency || "BDT"}
+                    {originData.Currency || "BDT"}
                   </div>
+                  {isMultiSegment && (
+                    <div>
+                      <span className="font-medium">Segments:</span>{" "}
+                      {segments.length}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
