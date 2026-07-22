@@ -2,7 +2,12 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 
 // API
-import { searchFlights, getCities } from "../api/flight";
+import {
+  searchFlights,
+  getCities,
+  getAirlines,
+  filterFlights,
+} from "../api/flight";
 
 // Icons
 import { FaArrowRight } from "react-icons/fa";
@@ -11,6 +16,7 @@ import { FaArrowRight } from "react-icons/fa";
 import DatePicker from "../components/DatePicker";
 import TravelerClassPicker from "../components/TravelerClassPicker";
 import FlightResults from "../components/FlightResults";
+import FlightFilters from "../components/FlightFilters";
 
 const extractCityName = (searchString) => {
   if (!searchString) return "";
@@ -65,7 +71,7 @@ const parseDateFromString = (dateStr) => {
   };
 };
 
-// Get today's date formatted (same as Home.jsx)
+// Get today's date formatted
 const getTodayDate = () => {
   const today = new Date();
   const day = today.getDate();
@@ -181,14 +187,293 @@ const Search = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTravelerPicker, setShowTravelerPicker] = useState(false);
   const [flights, setFlights] = useState([]);
+  const [filteredFlights, setFilteredFlights] = useState([]);
+  const [filterOptions, setFilterOptions] = useState({});
   const [loading, setLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
+
+  // Filter states
+  const [filters, setFilters] = useState({
+    min_price: "",
+    max_price: "",
+    fare_type: [],
+    airlines: [],
+    airline_code: [],
+    aircraft: [],
+    baggage: [],
+    onward_flight_stops: [],
+    return_flight_stops: [],
+    onward_depart_time: [],
+    return_depart_time: [],
+    onward_arrival_time: [],
+    return_arrival_time: [],
+    onward_transit_hour: [],
+    return_transit_hour: [],
+    onward_flying_time: [],
+    return_flying_time: [],
+    onward_layover_airport: [],
+    return_layover_airport: [],
+    onward_destination_airport: [],
+    return_destination_airport: [],
+  });
+
+  const [selectedAirlines, setSelectedAirlines] = useState([]);
+  const [filterLoading, setFilterLoading] = useState(false);
+
+  // Create airlines array from filterOptions
+  const airlinesList = useMemo(() => {
+    if (!filterOptions?.airlines || !filterOptions?.airline_code) return [];
+    return filterOptions.airlines.map((name, index) => ({
+      ID: index + 1,
+      Code:
+        filterOptions.airline_code[index] || name.substring(0, 2).toUpperCase(),
+      AriLineName: name,
+    }));
+  }, [filterOptions]);
+
+  // Helper to extract filter values
+  const extractFilterValues = useCallback((items) => {
+    if (!items || items.length === 0) return [];
+    if (
+      typeof items[0] === "object" &&
+      items[0] !== null &&
+      "name" in items[0]
+    ) {
+      return items.map((item) => item.name);
+    }
+    return items;
+  }, []);
+
+  // Apply filters function - FIXED
+  // Apply filters function - WITH COMPLETE LOGGING
+  const applyFilters = useCallback(async () => {
+    console.log("=== APPLY FILTERS STARTED ===");
+    console.log("Flights count:", flights.length);
+    console.log("Current filters:", JSON.stringify(filters, null, 2));
+
+    if (flights.length === 0) {
+      setSearchError("No flights to filter");
+      return;
+    }
+
+    setFilterLoading(true);
+    setSearchError("");
+
+    const filterData = {};
+
+    // Price range
+    if (filters.min_price && filters.min_price !== "") {
+      filterData.min_price = parseFloat(filters.min_price);
+    }
+    if (filters.max_price && filters.max_price !== "") {
+      filterData.max_price = parseFloat(filters.max_price);
+    }
+
+    // Arrays with values
+    if (filters.fare_type.length > 0) {
+      filterData.fare_type = extractFilterValues(filters.fare_type);
+    }
+    if (filters.airlines.length > 0) {
+      filterData.airlines = extractFilterValues(filters.airlines);
+    }
+    if (filters.airline_code.length > 0) {
+      filterData.airline_code = extractFilterValues(filters.airline_code);
+    }
+    if (filters.aircraft.length > 0) {
+      filterData.aircraft = extractFilterValues(filters.aircraft);
+    }
+    if (filters.baggage.length > 0) {
+      filterData.baggage = extractFilterValues(filters.baggage);
+    }
+    if (filters.onward_flight_stops.length > 0) {
+      filterData.onward_flight_stops = extractFilterValues(
+        filters.onward_flight_stops,
+      );
+    }
+    if (filters.return_flight_stops.length > 0) {
+      filterData.return_flight_stops = extractFilterValues(
+        filters.return_flight_stops,
+      );
+    }
+    if (filters.onward_depart_time.length > 0) {
+      filterData.onward_depart_time = extractFilterValues(
+        filters.onward_depart_time,
+      );
+    }
+    if (filters.onward_arrival_time.length > 0) {
+      filterData.onward_arrival_time = extractFilterValues(
+        filters.onward_arrival_time,
+      );
+    }
+    if (filters.onward_flying_time.length > 0) {
+      filterData.onward_flying_time = extractFilterValues(
+        filters.onward_flying_time,
+      );
+    }
+    if (filters.onward_transit_hour.length > 0) {
+      filterData.onward_transit_hour = extractFilterValues(
+        filters.onward_transit_hour,
+      );
+    }
+    if (filters.return_depart_time.length > 0) {
+      filterData.return_depart_time = extractFilterValues(
+        filters.return_depart_time,
+      );
+    }
+    if (filters.return_arrival_time.length > 0) {
+      filterData.return_arrival_time = extractFilterValues(
+        filters.return_arrival_time,
+      );
+    }
+    if (filters.return_flying_time.length > 0) {
+      filterData.return_flying_time = extractFilterValues(
+        filters.return_flying_time,
+      );
+    }
+    if (filters.return_transit_hour.length > 0) {
+      filterData.return_transit_hour = extractFilterValues(
+        filters.return_transit_hour,
+      );
+    }
+    if (filters.onward_layover_airport.length > 0) {
+      filterData.onward_layover_airport = extractFilterValues(
+        filters.onward_layover_airport,
+      );
+    }
+    if (filters.onward_destination_airport.length > 0) {
+      filterData.onward_destination_airport = extractFilterValues(
+        filters.onward_destination_airport,
+      );
+    }
+    if (filters.return_layover_airport.length > 0) {
+      filterData.return_layover_airport = extractFilterValues(
+        filters.return_layover_airport,
+      );
+    }
+    if (filters.return_destination_airport.length > 0) {
+      filterData.return_destination_airport = extractFilterValues(
+        filters.return_destination_airport,
+      );
+    }
+
+    // If no filters are selected, show all flights
+    if (Object.keys(filterData).length === 0) {
+      console.log("No filters selected, showing all flights");
+      setFilteredFlights(flights);
+      setSearchError("");
+      setFilterLoading(false);
+      return;
+    }
+
+    console.log("=== FINAL FILTER DATA ===");
+    console.log("Filter data being sent:", JSON.stringify(filterData, null, 2));
+    console.log("Filter keys:", Object.keys(filterData));
+
+    // Log first flight structure to understand what we're filtering
+    if (flights.length > 0) {
+      console.log(
+        "Sample flight (first):",
+        JSON.stringify(flights[0], null, 2),
+      );
+      console.log("What aircraft values exist in flights?");
+      const aircraftValues = new Set();
+      flights.forEach((f) => {
+        if (f.OnwardFlights && f.OnwardFlights.length > 0) {
+          f.OnwardFlights.forEach((of) => {
+            if (of.Aircraft) aircraftValues.add(of.Aircraft);
+          });
+        }
+      });
+      console.log("Aircraft values in flights:", Array.from(aircraftValues));
+    }
+
+    try {
+      console.log("=== CALLING FILTER API ===");
+      const response = await filterFlights(flights, filterData);
+      console.log("=== API RESPONSE ===");
+      console.log("Full response:", response);
+      console.log("Response data type:", typeof response.data);
+      console.log("Response data:", response.data);
+      console.log("Response data length:", response.data?.length);
+
+      const filtered = response.data || [];
+      console.log("Filtered flights count:", filtered.length);
+
+      setFilteredFlights(filtered);
+
+      if (filtered.length === 0) {
+        console.warn("⚠️ No flights matched the filter criteria");
+        setSearchError("No flights match your filter criteria");
+      } else {
+        console.log(`✅ Successfully filtered ${filtered.length} flights`);
+        console.log(
+          "First filtered flight:",
+          JSON.stringify(filtered[0], null, 2),
+        );
+        setSearchError("");
+      }
+    } catch (error) {
+      console.error("=== FILTER ERROR ===");
+      console.error("Error:", error);
+      console.error("Error message:", error.message);
+      console.error("Error response:", error.response);
+      console.error("Error stack:", error.stack);
+      setSearchError(
+        error.response?.data?.message ||
+          "Failed to apply filters. Please try again.",
+      );
+    } finally {
+      setFilterLoading(false);
+      console.log("=== APPLY FILTERS COMPLETED ===");
+    }
+  }, [flights, filters, extractFilterValues]);
+
+  const resetFilters = useCallback(() => {
+    setFilters({
+      min_price: "",
+      max_price: "",
+      fare_type: [],
+      airlines: [],
+      airline_code: [],
+      aircraft: [],
+      baggage: [],
+      onward_flight_stops: [],
+      return_flight_stops: [],
+      onward_depart_time: [],
+      return_depart_time: [],
+      onward_arrival_time: [],
+      return_arrival_time: [],
+      onward_transit_hour: [],
+      return_transit_hour: [],
+      onward_flying_time: [],
+      return_flying_time: [],
+      onward_layover_airport: [],
+      return_layover_airport: [],
+      onward_destination_airport: [],
+      return_destination_airport: [],
+    });
+    setSelectedAirlines([]);
+    setFilteredFlights([]);
+    setSearchError("");
+  }, []);
 
   // Refs
   const dropdownRef = useRef(null);
   const abortControllerRef = useRef(null);
   const debounceTimeoutRef = useRef(null);
   const isInitialMount = useRef(true);
+
+  useEffect(() => {
+    const loadAirlines = async () => {
+      try {
+        // eslint-disable-next-line no-unused-vars
+        const data = await getAirlines();
+      } catch (error) {
+        console.error("Failed to load airlines:", error);
+      }
+    };
+    loadAirlines();
+  }, []);
 
   const formatSearchParams = useCallback(() => {
     let departureDate = searchParams.DepartureDate;
@@ -201,44 +486,64 @@ const Search = () => {
     }
 
     return {
-      JourneyType: searchParams.JourneyType || 1,
+      JourneyType: parseInt(searchParams.JourneyType) || 1,
       Origin: searchParams.Origin,
       Destination: searchParams.Destination,
       DepartureDate: departureDate,
       ReturnDate: searchParams.ReturnDate || "",
       ClassType: travelerSelection.classType || "Economy",
-      NoofAdult: travelerSelection.adults || 1,
-      NoofChildren: travelerSelection.children || 0,
-      NoofInfant: travelerSelection.infants || 0,
-      IsSpecialTexRedumption: false,
-      IsFlexSearch: false,
+      NoofAdult: parseInt(travelerSelection.adults) || 1,
+      NoofChildren: parseInt(travelerSelection.children) || 0,
+      NoofInfant: parseInt(travelerSelection.infants) || 0,
       Flex: null,
-      ChildrenAges: [],
     };
   }, [searchParams, selectedDate, travelerSelection]);
 
-  const performSearch = useCallback(async (formattedParams) => {
-    setLoading(true);
-    setSearchError("");
+  const performSearch = useCallback(
+    async (formattedParams) => {
+      // Reset everything for new search to show skeleton
+      setFlights([]);
+      setFilteredFlights([]);
+      setFilterOptions({});
+      setLoading(true);
+      setSearchError("");
 
-    try {
-      const data = await searchFlights(formattedParams);
-      setFlights(data.data || []);
+      try {
+        const data = await searchFlights(formattedParams);
+        const results = data.data || [];
+        setFlights(results);
+        setFilteredFlights([]); // Clear filtered results
 
-      if (data.data?.length === 0) {
-        setSearchError("No flights found for your search criteria");
+        // Store filter options from API response
+        if (data.filter) {
+          setFilterOptions(data.filter);
+        }
+
+        resetFilters();
+
+        if (results.length === 0) {
+          setSearchError("No flights found for your search criteria");
+        }
+      } catch (error) {
+        console.error("Search error:", error);
+        let errorMessage = "Failed to search flights. Please try again.";
+        if (error.response?.data?.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response?.data?.error) {
+          errorMessage = error.response.data.error;
+        } else if (error.request) {
+          errorMessage =
+            "No response from server. Please check your connection.";
+        }
+        setSearchError(errorMessage);
+        setFlights([]);
+        setFilterOptions({});
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Search error:", error);
-      setSearchError(
-        error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Failed to search flights. Please try again.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [resetFilters],
+  );
 
   const sortCitiesByRelevance = useCallback((cities, query) => {
     const searchLower = query.toLowerCase().trim();
@@ -470,8 +775,12 @@ const Search = () => {
     });
   };
 
+  // Determine which flights to display (filtered or all)
+  const displayFlights = filteredFlights.length > 0 ? filteredFlights : flights;
+
   return (
     <div className="min-h-screen bg-gray-200">
+      {/* Main Content */}
       <div className="bg-white p-6 max-w-full w-full pt-24">
         {/* Search Form */}
         <div className="flex items-center gap-2">
@@ -694,63 +1003,84 @@ const Search = () => {
             {loading ? "Searching..." : "Search Flights"}
           </button>
         </div>
-
-        {searchError && (
-          <div className="mt-4 text-red-500 text-sm text-center">
-            {searchError}
-          </div>
-        )}
-
-        {loading && (
-          <div className="mt-4 text-blue-500 text-sm text-center">
-            Searching for flights...
-          </div>
-        )}
       </div>
 
-      {flights.length > 0 && (
+      {/* Show skeleton when loading and no flights yet */}
+      {(loading || (flights.length === 0 && !searchError && !loading)) &&
+        displayFlights.length === 0 && (
+          <div className="flex items-start gap-2 px-5 mt-5">
+            <div className="w-1/3">
+              <FlightFilters
+                filters={filters}
+                setFilters={setFilters}
+                filterOptions={filterOptions}
+                airlines={airlinesList}
+                selectedAirlines={selectedAirlines}
+                setSelectedAirlines={setSelectedAirlines}
+                journeyType={searchParams.JourneyType}
+                filterLoading={true}
+                applyFilters={applyFilters}
+              />
+            </div>
+            <div className="w-2/3">
+              <FlightResults flights={[]} loading={true} error={null} />
+            </div>
+          </div>
+        )}
+
+      {/* Flight Results */}
+      {displayFlights.length > 0 && !searchError && (
         <div className="flex items-start gap-2 px-5 mt-5">
-          <div className="w-1/3 bg-white rounded-lg shadow-lg border border-gray-100 sticky top-4 h-fit max-h-[calc(100vh-2rem)] overflow-y-auto">
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-gray-200">
-              <h1 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-                <svg
-                  className="w-5 h-5 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
-                  />
-                </svg>
-                Filters
-              </h1>
-              <button
-                onClick={() => {
-                  /* Clear filters logic */
-                }}
-                className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
-              >
-                Clear All
-              </button>
-            </div>
+          {/* Filter List */}
+          <div className="w-1/3">
+            <FlightFilters
+              filters={filters}
+              setFilters={setFilters}
+              filterOptions={filterOptions}
+              airlines={airlinesList}
+              selectedAirlines={selectedAirlines}
+              setSelectedAirlines={setSelectedAirlines}
+              journeyType={searchParams.JourneyType}
+              filterLoading={filterLoading}
+              applyFilters={applyFilters}
+            />
+          </div>
 
-            {/* Filter Content */}
-            <div className="p-5 space-y-6">
+          {/* Flight Results */}
+          <div className="w-2/3">
+            <FlightResults
+              flights={displayFlights}
+              loading={loading}
+              error={searchError}
+              onRetry={handleSearch}
+            />
+          </div>
+        </div>
+      )}
 
-              {/* Apply Filters Button */}
-              <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition-colors shadow-sm hover:shadow-md">
-                Apply Filters
-              </button>
-            </div>
-
+      {/* Show error state when there's an error */}
+      {searchError && !loading && (
+        <div className="flex items-start gap-2 px-5 mt-5">
+          <div className="w-1/3">
+            <FlightFilters
+              filters={filters}
+              setFilters={setFilters}
+              filterOptions={filterOptions}
+              airlines={airlinesList}
+              selectedAirlines={selectedAirlines}
+              setSelectedAirlines={setSelectedAirlines}
+              journeyType={searchParams.JourneyType}
+              filterLoading={false}
+              applyFilters={applyFilters}
+            />
           </div>
           <div className="w-2/3">
-            <FlightResults flights={flights} />
+            <FlightResults
+              flights={[]}
+              loading={false}
+              error={searchError}
+              onRetry={handleSearch}
+            />
           </div>
         </div>
       )}

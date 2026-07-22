@@ -1,9 +1,153 @@
+// FlightResults.jsx
 import { useState } from "react";
-import { FaClock, FaUser, FaSuitcase, FaPlane } from "react-icons/fa";
+import {
+  FaClock,
+  FaUser,
+  FaSuitcase,
+  FaPlane,
+  FaExclamationTriangle,
+  FaSearch,
+} from "react-icons/fa";
 import { MdFlight } from "react-icons/md";
 
-const FlightResults = ({ flights }) => {
+// Skeleton Loading Component
+const FlightResultSkeleton = () => {
+  return (
+    <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden relative animate-pulse">
+      {/* Refundable Badge Skeleton */}
+      <div className="relative h-0">
+        <div className="absolute -top-2 -right-2 z-10">
+          <div className="h-6 w-24 bg-gray-200 rounded-full"></div>
+        </div>
+      </div>
+
+      {/* Main Content Skeleton */}
+      <div className="p-4">
+        {/* Airline and Route Section */}
+        <div className="flex items-center justify-between gap-5 mb-3">
+          {/* Airline and Flight Number */}
+          <div className="flex items-center gap-2 min-w-30">
+            <div className="w-10 h-10 rounded-full bg-gray-200"></div>
+            <div className="min-w-0">
+              <div className="h-5 w-24 bg-gray-200 rounded"></div>
+              <div className="h-3 w-16 bg-gray-200 rounded mt-1"></div>
+            </div>
+          </div>
+
+          {/* Flight Details */}
+          <div className="flex items-center justify-center px-4 py-2 flex-1">
+            {/* Origin */}
+            <div className="text-right min-w-20">
+              <div className="h-3 w-8 bg-gray-200 rounded mx-auto"></div>
+              <div className="h-7 w-12 bg-gray-200 rounded mt-1 mx-auto"></div>
+              <div className="h-4 w-10 bg-gray-200 rounded mt-1 mx-auto"></div>
+              <div className="h-3 w-14 bg-gray-200 rounded mt-1 mx-auto"></div>
+            </div>
+
+            {/* Flight Path */}
+            <div className="flex-1 flex flex-col items-center px-4 max-w-45">
+              <div className="flex items-center gap-2 w-full">
+                <div className="flex-1 h-0.5 bg-gray-200"></div>
+                <div className="shrink-0">
+                  <div className="w-4 h-4 bg-gray-200 rounded-full"></div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 mt-1">
+                <div className="h-3 w-12 bg-gray-200 rounded"></div>
+                <div className="h-3 w-3 bg-gray-200 rounded"></div>
+                <div className="h-3 w-14 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+
+            {/* Destination */}
+            <div className="text-left min-w-20">
+              <div className="h-3 w-8 bg-gray-200 rounded"></div>
+              <div className="h-7 w-12 bg-gray-200 rounded mt-1"></div>
+              <div className="h-4 w-10 bg-gray-200 rounded mt-1"></div>
+              <div className="h-3 w-14 bg-gray-200 rounded mt-1"></div>
+            </div>
+          </div>
+
+          {/* Price and Book Button */}
+          <div className="flex items-center gap-3 mt-2 min-w-35 shrink-0">
+            <div className="text-right">
+              <div className="h-3 w-14 bg-gray-200 rounded ml-auto"></div>
+              <div className="h-7 w-16 bg-gray-200 rounded mt-1 ml-auto"></div>
+            </div>
+            <div className="flex flex-col items-end">
+              <div className="h-10 w-24 bg-gray-200 rounded-lg"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Flight Details Skeleton */}
+        <div className="mt-3 pt-3 border-dashed border-t border-gray-200 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+          <div className="flex items-center gap-1">
+            <div className="w-4 h-4 bg-gray-200 rounded"></div>
+            <div className="h-4 w-20 bg-gray-200 rounded"></div>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="h-4 w-12 bg-gray-200 rounded"></div>
+            <div className="h-4 w-16 bg-gray-200 rounded"></div>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-4 h-4 bg-gray-200 rounded"></div>
+            <div className="h-4 w-16 bg-gray-200 rounded"></div>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-4 h-4 bg-gray-200 rounded"></div>
+            <div className="h-4 w-20 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Error State Component
+const FlightResultsError = ({ error, onRetry }) => {
+  return (
+    <div className="bg-white rounded-xl shadow-md border border-red-100 p-8 text-center">
+      <div className="flex flex-col items-center">
+        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
+          <FaExclamationTriangle className="text-red-500 text-3xl" />
+        </div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">
+          Oops! Something went wrong
+        </h3>
+        <p className="text-gray-600 mb-4 max-w-md">
+          {error || "We couldn't load the flight results. Please try again."}
+        </p>
+        <button
+          onClick={onRetry}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2"
+        >
+          <FaSearch className="text-sm" />
+          Try Again
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const FlightResults = ({ flights, loading, error, onRetry }) => {
   const [expandedIndex, setExpandedIndex] = useState(null);
+
+  // Show skeleton loading
+  if (loading) {
+    return (
+      <div className="space-y-5">
+        {[...Array(3)].map((_, index) => (
+          <FlightResultSkeleton key={index} />
+        ))}
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return <FlightResultsError error={error} onRetry={onRetry} />;
+  }
 
   if (!flights || flights.length === 0) {
     return (
@@ -46,7 +190,7 @@ const FlightResults = ({ flights }) => {
       : text;
   };
 
-  console.log(flights[0]);
+  // console.log(flights[0]);
 
   return (
     <div className="space-y-5">

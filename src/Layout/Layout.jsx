@@ -1,5 +1,5 @@
 // src/components/Layout.jsx
-import { Link, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet } from "react-router-dom";
 import { useState } from "react";
 
 import LoginModal from "../Modal/LoginModal";
@@ -18,40 +18,41 @@ const Layout = () => {
     logout();
   };
 
+  // Helper function for NavLink className
+  const getNavLinkClass = ({ isActive }) => {
+    return isActive
+      ? "text-blue-600 font-semibold transition-colors relative after:content-[''] after:absolute after:bottom-[-4px] after:left-0 after:w-full after:h-0.5 after:bg-blue-600 after:rounded-full"
+      : "text-black/80 hover:text-black font-medium transition-colors";
+  };
+
   return (
     <div className="min-h-screen relative">
       {/* Navbar - Absolute, floats over content */}
-      <nav className="px-6 md:px-10 py-4 bg-white/10 backdrop-blur-md border-b border-white/20 shadow-sm absolute top-0 left-0 right-0 z-50">
+      <nav className="px-6 md:px-5 py-4 bg-white/10 backdrop-blur-md border-b border-white/20 shadow-sm absolute top-0 left-0 right-0 z-50">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo */}
-          <a href="/" className="flex items-center gap-2 group">
+          <Link to="/" className="flex items-center gap-2 group">
             <div className="w-9 h-9 bg-linear-to-br from-blue-600 to-blue-400 rounded-xl flex items-center justify-center text-white font-bold text-sm shadow-md group-hover:shadow-lg transition-shadow">
               ✈️
             </div>
             <h1 className="text-black text-2xl font-bold tracking-tight">
               Sazz<span className="text-blue-300">Air</span>
             </h1>
-          </a>
+          </Link>
 
           {/* Desktop Navigation Links */}
-          {isLoggedIn ? (
-            <div className="hidden md:flex items-center gap-8">
-              <Link
-                to="/config"
-                className="text-black/80 hover:text-black font-medium transition-colors"
-              >
+          <div className="hidden md:flex items-center gap-8">
+            <NavLink to="/search" className={getNavLinkClass}>
+              Flight Search
+            </NavLink>
+
+            {/* Only show Markup Settings when logged in */}
+            {isLoggedIn && (
+              <NavLink to="/config" className={getNavLinkClass}>
                 Markup Settings
-              </Link>
-              <Link
-                to="/upload"
-                className="text-black/80 hover:text-black font-medium transition-colors"
-              >
-                Image Upload
-              </Link>
-            </div>
-          ) : (
-            <div />
-          )}
+              </NavLink>
+            )}
+          </div>
 
           {/* Auth Buttons */}
           <div className="flex items-center gap-3">

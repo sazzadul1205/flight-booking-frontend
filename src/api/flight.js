@@ -12,7 +12,7 @@ const authConfig = (signal) => ({
     Authorization: `Bearer ${getToken()}`,
     "Content-Type": "application/json",
   },
-  signal, 
+  signal,
 });
 
 // Search flights
