@@ -21,7 +21,6 @@ import {
   FaPlus,
   FaRedo,
   FaSpinner,
-  FaSearch,
   FaSlidersH,
 } from "react-icons/fa";
 
@@ -34,7 +33,6 @@ const FlightFilters = ({
   setSelectedAirlines,
   journeyType,
   filterLoading,
-  applyFilters,
 }) => {
   const [expandedSections, setExpandedSections] = useState({
     price: true,
@@ -197,6 +195,11 @@ const FlightFilters = ({
     if (filters.return_destination_airport?.length > 0)
       count += filters.return_destination_airport.length;
     return count;
+  };
+
+  // Check if any filters are active (FIX: added this function)
+  const hasActiveFilters = () => {
+    return getFilterCount() > 0;
   };
 
   // Clear all filters
@@ -1060,35 +1063,28 @@ const FlightFilters = ({
           </>
         )}
 
-        {/* Apply Filters Button */}
-        <button
-          onClick={applyFilters}
-          disabled={filterLoading || isLoading}
-          className="w-full bg-linear-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:via-indigo-700 hover:to-purple-700 text-white py-3.5 px-4 rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-lg shadow-indigo-200/50 hover:shadow-xl hover:shadow-indigo-300/50 mt-4 relative overflow-hidden group"
-        >
-          <span className="absolute inset-0 bg-linear-to-r from-blue-400/20 via-indigo-400/20 to-purple-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
-          {filterLoading ? (
-            <>
-              <FaSpinner className="animate-spin w-5 h-5 relative z-10" />
-              <span className="relative z-10">Applying Filters...</span>
-            </>
-          ) : isLoading ? (
-            <>
-              <FaSpinner className="animate-spin w-5 h-5 relative z-10" />
-              <span className="relative z-10">Loading Filters...</span>
-            </>
-          ) : (
-            <>
-              <FaSearch className="w-4 h-4 relative z-10 group-hover:scale-110 transition-transform" />
-              <span className="relative z-10">Apply Filters</span>
-              {getFilterCount() > 0 && (
-                <span className="bg-white/20 text-white text-xs px-2.5 py-0.5 rounded-full relative z-10 font-bold">
-                  {getFilterCount()}
+        {/* Auto-Filtering Status */}
+        <div className="mt-4 p-3 bg-linear-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100/60">
+          <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+            {filterLoading ? (
+              <>
+                <FaSpinner className="animate-spin w-4 h-4 text-indigo-500" />
+                <span className="font-medium text-indigo-600">
+                  Filtering results...
                 </span>
-              )}
-            </>
-          )}
-        </button>
+              </>
+            ) : (
+              <>
+                <FaCheck className="w-4 h-4 text-green-500" />
+                <span className="font-medium text-gray-700">
+                  {hasActiveFilters()
+                    ? `Auto-filtering (${getFilterCount()} filters active)`
+                    : "No filters applied"}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* CSS animations */}

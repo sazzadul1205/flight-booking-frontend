@@ -192,6 +192,9 @@ const Search = () => {
   const [loading, setLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
 
+  // Store IGXKey for caching
+  const [igxKey, setIgxKey] = useState(null);
+
   // Filter states
   const [filters, setFilters] = useState({
     min_price: "",
@@ -220,6 +223,13 @@ const Search = () => {
   const [selectedAirlines, setSelectedAirlines] = useState([]);
   const [filterLoading, setFilterLoading] = useState(false);
 
+  // Debounce timer for real-time filtering
+  const filterDebounceTimer = useRef(null);
+
+  // Track previous filters to avoid unnecessary calls
+  const previousFiltersRef = useRef(filters);
+  const isFirstFilterRun = useRef(true);
+
   // Create airlines array from filterOptions
   const airlinesList = useMemo(() => {
     if (!filterOptions?.airlines || !filterOptions?.airline_code) return [];
@@ -244,189 +254,157 @@ const Search = () => {
     return items;
   }, []);
 
-  // Apply filters function - FIXED
-  // Apply filters function - WITH COMPLETE LOGGING
-  const applyFilters = useCallback(async () => {
-    console.log("=== APPLY FILTERS STARTED ===");
-    console.log("Flights count:", flights.length);
-    console.log("Current filters:", JSON.stringify(filters, null, 2));
+  // Check if any filters are applied
+  const hasActiveFilters = useCallback(() => {
+    return Object.values(filters).some((val) => {
+      if (Array.isArray(val)) return val.length > 0;
+      return val !== "" && val !== null && val !== undefined;
+    });
+  }, [filters]);
 
-    if (flights.length === 0) {
-      setSearchError("No flights to filter");
+  // REAL-TIME FILTER FUNCTION - Called automatically on filter changes
+  const applyFiltersRealtime = useCallback(async () => {
+    // Clear any pending debounce
+    if (filterDebounceTimer.current) {
+      clearTimeout(filterDebounceTimer.current);
+      filterDebounceTimer.current = null;
+    }
+
+    // If no IGXKey or no flights, skip
+    if (!igxKey || flights.length === 0) {
+      setFilteredFlights(flights);
       return;
-    }
-
-    setFilterLoading(true);
-    setSearchError("");
-
-    const filterData = {};
-
-    // Price range
-    if (filters.min_price && filters.min_price !== "") {
-      filterData.min_price = parseFloat(filters.min_price);
-    }
-    if (filters.max_price && filters.max_price !== "") {
-      filterData.max_price = parseFloat(filters.max_price);
-    }
-
-    // Arrays with values
-    if (filters.fare_type.length > 0) {
-      filterData.fare_type = extractFilterValues(filters.fare_type);
-    }
-    if (filters.airlines.length > 0) {
-      filterData.airlines = extractFilterValues(filters.airlines);
-    }
-    if (filters.airline_code.length > 0) {
-      filterData.airline_code = extractFilterValues(filters.airline_code);
-    }
-    if (filters.aircraft.length > 0) {
-      filterData.aircraft = extractFilterValues(filters.aircraft);
-    }
-    if (filters.baggage.length > 0) {
-      filterData.baggage = extractFilterValues(filters.baggage);
-    }
-    if (filters.onward_flight_stops.length > 0) {
-      filterData.onward_flight_stops = extractFilterValues(
-        filters.onward_flight_stops,
-      );
-    }
-    if (filters.return_flight_stops.length > 0) {
-      filterData.return_flight_stops = extractFilterValues(
-        filters.return_flight_stops,
-      );
-    }
-    if (filters.onward_depart_time.length > 0) {
-      filterData.onward_depart_time = extractFilterValues(
-        filters.onward_depart_time,
-      );
-    }
-    if (filters.onward_arrival_time.length > 0) {
-      filterData.onward_arrival_time = extractFilterValues(
-        filters.onward_arrival_time,
-      );
-    }
-    if (filters.onward_flying_time.length > 0) {
-      filterData.onward_flying_time = extractFilterValues(
-        filters.onward_flying_time,
-      );
-    }
-    if (filters.onward_transit_hour.length > 0) {
-      filterData.onward_transit_hour = extractFilterValues(
-        filters.onward_transit_hour,
-      );
-    }
-    if (filters.return_depart_time.length > 0) {
-      filterData.return_depart_time = extractFilterValues(
-        filters.return_depart_time,
-      );
-    }
-    if (filters.return_arrival_time.length > 0) {
-      filterData.return_arrival_time = extractFilterValues(
-        filters.return_arrival_time,
-      );
-    }
-    if (filters.return_flying_time.length > 0) {
-      filterData.return_flying_time = extractFilterValues(
-        filters.return_flying_time,
-      );
-    }
-    if (filters.return_transit_hour.length > 0) {
-      filterData.return_transit_hour = extractFilterValues(
-        filters.return_transit_hour,
-      );
-    }
-    if (filters.onward_layover_airport.length > 0) {
-      filterData.onward_layover_airport = extractFilterValues(
-        filters.onward_layover_airport,
-      );
-    }
-    if (filters.onward_destination_airport.length > 0) {
-      filterData.onward_destination_airport = extractFilterValues(
-        filters.onward_destination_airport,
-      );
-    }
-    if (filters.return_layover_airport.length > 0) {
-      filterData.return_layover_airport = extractFilterValues(
-        filters.return_layover_airport,
-      );
-    }
-    if (filters.return_destination_airport.length > 0) {
-      filterData.return_destination_airport = extractFilterValues(
-        filters.return_destination_airport,
-      );
     }
 
     // If no filters are selected, show all flights
-    if (Object.keys(filterData).length === 0) {
+    if (!hasActiveFilters()) {
       console.log("No filters selected, showing all flights");
       setFilteredFlights(flights);
       setSearchError("");
-      setFilterLoading(false);
       return;
     }
 
-    console.log("=== FINAL FILTER DATA ===");
-    console.log("Filter data being sent:", JSON.stringify(filterData, null, 2));
-    console.log("Filter keys:", Object.keys(filterData));
+    // Debounce the API call (300ms delay)
+    filterDebounceTimer.current = setTimeout(async () => {
+      setFilterLoading(true);
+      setSearchError("");
 
-    // Log first flight structure to understand what we're filtering
-    if (flights.length > 0) {
-      console.log(
-        "Sample flight (first):",
-        JSON.stringify(flights[0], null, 2),
-      );
-      console.log("What aircraft values exist in flights?");
-      const aircraftValues = new Set();
-      flights.forEach((f) => {
-        if (f.OnwardFlights && f.OnwardFlights.length > 0) {
-          f.OnwardFlights.forEach((of) => {
-            if (of.Aircraft) aircraftValues.add(of.Aircraft);
-          });
+      try {
+        // Build filter data
+        const filterData = {};
+
+        // Price range
+        if (filters.min_price && filters.min_price !== "") {
+          filterData.min_price = parseFloat(filters.min_price);
         }
-      });
-      console.log("Aircraft values in flights:", Array.from(aircraftValues));
-    }
+        if (filters.max_price && filters.max_price !== "") {
+          filterData.max_price = parseFloat(filters.max_price);
+        }
 
-    try {
-      console.log("=== CALLING FILTER API ===");
-      const response = await filterFlights(flights, filterData);
-      console.log("=== API RESPONSE ===");
-      console.log("Full response:", response);
-      console.log("Response data type:", typeof response.data);
-      console.log("Response data:", response.data);
-      console.log("Response data length:", response.data?.length);
+        // Arrays with values
+        const filterKeys = [
+          "fare_type",
+          "airlines",
+          "airline_code",
+          "aircraft",
+          "baggage",
+          "onward_flight_stops",
+          "return_flight_stops",
+          "onward_depart_time",
+          "onward_arrival_time",
+          "onward_flying_time",
+          "onward_transit_hour",
+          "return_depart_time",
+          "return_arrival_time",
+          "return_flying_time",
+          "return_transit_hour",
+          "onward_layover_airport",
+          "onward_destination_airport",
+          "return_layover_airport",
+          "return_destination_airport",
+        ];
 
-      const filtered = response.data || [];
-      console.log("Filtered flights count:", filtered.length);
+        filterKeys.forEach((key) => {
+          if (filters[key] && filters[key].length > 0) {
+            filterData[key] = extractFilterValues(filters[key]);
+          }
+        });
 
-      setFilteredFlights(filtered);
+        console.log("Sending real-time filter request with IGXKey:", igxKey);
+        console.log("Filter data:", filterData);
 
-      if (filtered.length === 0) {
-        console.warn("⚠️ No flights matched the filter criteria");
-        setSearchError("No flights match your filter criteria");
-      } else {
-        console.log(`✅ Successfully filtered ${filtered.length} flights`);
-        console.log(
-          "First filtered flight:",
-          JSON.stringify(filtered[0], null, 2),
-        );
-        setSearchError("");
+        // Use the new filter API with IGXKey
+        const response = await filterFlights(igxKey, filterData);
+        console.log("Filter response:", response);
+
+        const filtered = response.data || [];
+        console.log("Filtered flights count:", filtered.length);
+
+        setFilteredFlights(filtered);
+
+        if (filtered.length === 0) {
+          setSearchError("No flights match your filter criteria");
+        } else {
+          setSearchError("");
+        }
+      } catch (error) {
+        console.error("Real-time filter error:", error);
+
+        // Handle cache expired error
+        if (
+          error.response?.status === 410 ||
+          error.response?.data?.code === "CACHE_EXPIRED"
+        ) {
+          setSearchError("Flight data expired. Please search again.");
+          setIgxKey(null);
+        } else {
+          setSearchError(
+            error.response?.data?.message ||
+              "Failed to apply filters. Please try again.",
+          );
+        }
+      } finally {
+        setFilterLoading(false);
+        filterDebounceTimer.current = null;
       }
-    } catch (error) {
-      console.error("=== FILTER ERROR ===");
-      console.error("Error:", error);
-      console.error("Error message:", error.message);
-      console.error("Error response:", error.response);
-      console.error("Error stack:", error.stack);
-      setSearchError(
-        error.response?.data?.message ||
-          "Failed to apply filters. Please try again.",
-      );
-    } finally {
-      setFilterLoading(false);
-      console.log("=== APPLY FILTERS COMPLETED ===");
+    }, 300); // 300ms debounce for smooth UX
+  }, [igxKey, flights, filters, extractFilterValues, hasActiveFilters]);
+
+  // Auto-trigger filter when filters change (REAL-TIME) - FIXED
+  useEffect(() => {
+    // Skip on initial mount or if no IGXKey/flights
+    if (!igxKey || flights.length === 0) {
+      return;
     }
-  }, [flights, filters, extractFilterValues]);
+
+    // Skip the first run after search (filters are reset, so no need to filter)
+    if (isFirstFilterRun.current) {
+      isFirstFilterRun.current = false;
+      previousFiltersRef.current = filters;
+      return;
+    }
+
+    // Check if filters actually changed (deep compare for arrays)
+    const filtersChanged =
+      JSON.stringify(previousFiltersRef.current) !== JSON.stringify(filters);
+    if (!filtersChanged) {
+      return;
+    }
+
+    // Update previous filters ref
+    previousFiltersRef.current = filters;
+
+    // Trigger real-time filter with debounce
+    applyFiltersRealtime();
+
+    // Cleanup debounce on unmount or before next effect
+    return () => {
+      if (filterDebounceTimer.current) {
+        clearTimeout(filterDebounceTimer.current);
+        filterDebounceTimer.current = null;
+      }
+    };
+  }, [filters, igxKey, flights.length, applyFiltersRealtime]);
 
   const resetFilters = useCallback(() => {
     setFilters({
@@ -455,6 +433,31 @@ const Search = () => {
     setSelectedAirlines([]);
     setFilteredFlights([]);
     setSearchError("");
+    // Reset the first-run flag so future filter changes will trigger
+    isFirstFilterRun.current = true;
+    previousFiltersRef.current = {
+      min_price: "",
+      max_price: "",
+      fare_type: [],
+      airlines: [],
+      airline_code: [],
+      aircraft: [],
+      baggage: [],
+      onward_flight_stops: [],
+      return_flight_stops: [],
+      onward_depart_time: [],
+      return_depart_time: [],
+      onward_arrival_time: [],
+      return_arrival_time: [],
+      onward_transit_hour: [],
+      return_transit_hour: [],
+      onward_flying_time: [],
+      return_flying_time: [],
+      onward_layover_airport: [],
+      return_layover_airport: [],
+      onward_destination_airport: [],
+      return_destination_airport: [],
+    };
   }, []);
 
   // Refs
@@ -501,18 +504,35 @@ const Search = () => {
 
   const performSearch = useCallback(
     async (formattedParams) => {
-      // Reset everything for new search to show skeleton
+      // Reset everything for new search
       setFlights([]);
       setFilteredFlights([]);
       setFilterOptions({});
+      setIgxKey(null);
       setLoading(true);
       setSearchError("");
+
+      // Reset filter tracking refs
+      isFirstFilterRun.current = true;
+      previousFiltersRef.current = filters;
+
+      // Clear any pending filter debounce
+      if (filterDebounceTimer.current) {
+        clearTimeout(filterDebounceTimer.current);
+        filterDebounceTimer.current = null;
+      }
 
       try {
         const data = await searchFlights(formattedParams);
         const results = data.data || [];
         setFlights(results);
-        setFilteredFlights([]); // Clear filtered results
+        setFilteredFlights([]);
+
+        // Store IGXKey for future filter operations
+        if (data.igxKey) {
+          console.log("IGXKey received:", data.igxKey);
+          setIgxKey(data.igxKey);
+        }
 
         // Store filter options from API response
         if (data.filter) {
@@ -538,11 +558,12 @@ const Search = () => {
         setSearchError(errorMessage);
         setFlights([]);
         setFilterOptions({});
+        setIgxKey(null);
       } finally {
         setLoading(false);
       }
     },
-    [resetFilters],
+    [resetFilters, filters],
   );
 
   const sortCitiesByRelevance = useCallback((cities, query) => {
@@ -681,6 +702,9 @@ const Search = () => {
       }
       if (debounceTimeoutRef.current) {
         clearTimeout(debounceTimeoutRef.current);
+      }
+      if (filterDebounceTimer.current) {
+        clearTimeout(filterDebounceTimer.current);
       }
     };
   }, []);
@@ -1024,7 +1048,7 @@ const Search = () => {
               setSelectedAirlines={setSelectedAirlines}
               journeyType={searchParams.JourneyType}
               filterLoading={true}
-              applyFilters={applyFilters}
+              applyFilters={() => {}}
             />
           </div>
           <div className="w-2/3">
@@ -1032,7 +1056,6 @@ const Search = () => {
               flights={[]}
               loading={true}
               error={null}
-              // Add infinite loading prop if your FlightResults component supports it
               infiniteLoading={true}
             />
           </div>
@@ -1053,7 +1076,7 @@ const Search = () => {
               setSelectedAirlines={setSelectedAirlines}
               journeyType={searchParams.JourneyType}
               filterLoading={filterLoading}
-              applyFilters={applyFilters}
+              applyFilters={() => {}}
             />
           </div>
 
@@ -1061,7 +1084,7 @@ const Search = () => {
           <div className="w-2/3">
             <FlightResults
               flights={displayFlights}
-              loading={loading}
+              loading={loading || filterLoading}
               error={searchError}
               onRetry={handleSearch}
             />
@@ -1082,7 +1105,7 @@ const Search = () => {
               setSelectedAirlines={setSelectedAirlines}
               journeyType={searchParams.JourneyType}
               filterLoading={false}
-              applyFilters={applyFilters}
+              applyFilters={() => {}}
             />
           </div>
           <div className="w-2/3">

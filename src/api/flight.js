@@ -58,11 +58,11 @@ export const getAirlines = async () => {
   return response.data;
 };
 
-// Filter flights
-export const filterFlights = async (flights, filter) => {
+// Filter flights using IGXKey (NEW)
+export const filterFlights = async (igxKey, filter) => {
   const response = await axios.post(
     `${API_URL}/filter`,
-    { flights, filter },
+    { igxKey, filter },
     authConfig(),
   );
   return response.data;
