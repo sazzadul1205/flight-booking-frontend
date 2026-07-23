@@ -8,96 +8,90 @@ import {
   FaExclamationTriangle,
   FaSearch,
   FaInfoCircle,
+  FaChevronDown,
+  FaChevronUp,
+  FaStar,
+  FaShieldAlt,
 } from "react-icons/fa";
 import { MdFlight } from "react-icons/md";
 
-// Skeleton Loading Component
+// Skeleton Loading Component with vibrant gradient
 const FlightResultSkeleton = () => {
   return (
-    <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden relative animate-pulse">
-      {/* Refundable Badge Skeleton */}
+    <div className="bg-white rounded-2xl shadow-lg border border-blue-100/50 overflow-hidden relative animate-pulse">
       <div className="relative h-0">
         <div className="absolute -top-2 -right-2 z-10">
-          <div className="h-6 w-24 bg-gray-200 rounded-full"></div>
+          <div className="h-6 w-24 bg-linear-to-r from-blue-200 to-indigo-200 rounded-full"></div>
         </div>
       </div>
 
-      {/* Main Content Skeleton */}
-      <div className="p-4">
-        {/* Airline and Route Section */}
+      <div className="p-5">
         <div className="flex items-center justify-between gap-5 mb-3">
-          {/* Airline and Flight Number */}
-          <div className="flex items-center gap-2 min-w-30">
-            <div className="w-10 h-10 rounded-full bg-gray-200"></div>
+          <div className="flex items-center gap-3 min-w-30">
+            <div className="w-12 h-12 rounded-full bg-linear-to-br from-blue-200 to-indigo-200"></div>
             <div className="min-w-0">
-              <div className="h-5 w-24 bg-gray-200 rounded"></div>
-              <div className="h-3 w-16 bg-gray-200 rounded mt-1"></div>
+              <div className="h-5 w-24 bg-linear-to-r from-blue-200 to-indigo-200 rounded"></div>
+              <div className="h-3 w-16 bg-linear-to-r from-blue-100 to-indigo-100 rounded mt-1"></div>
             </div>
           </div>
 
-          {/* Flight Details */}
           <div className="flex items-center justify-center px-4 py-2 flex-1">
-            {/* Origin */}
             <div className="text-right min-w-20">
-              <div className="h-3 w-8 bg-gray-200 rounded mx-auto"></div>
-              <div className="h-7 w-12 bg-gray-200 rounded mt-1 mx-auto"></div>
-              <div className="h-4 w-10 bg-gray-200 rounded mt-1 mx-auto"></div>
-              <div className="h-3 w-14 bg-gray-200 rounded mt-1 mx-auto"></div>
+              <div className="h-3 w-8 bg-linear-to-r from-blue-100 to-indigo-100 rounded mx-auto"></div>
+              <div className="h-7 w-12 bg-linear-to-r from-blue-200 to-indigo-200 rounded mt-1 mx-auto"></div>
+              <div className="h-4 w-10 bg-linear-to-r from-blue-100 to-indigo-100 rounded mt-1 mx-auto"></div>
+              <div className="h-3 w-14 bg-linear-to-r from-blue-50 to-indigo-50 rounded mt-1 mx-auto"></div>
             </div>
 
-            {/* Flight Path */}
             <div className="flex-1 flex flex-col items-center px-4 max-w-45">
               <div className="flex items-center gap-2 w-full">
-                <div className="flex-1 h-0.5 bg-gray-200"></div>
+                <div className="flex-1 h-0.5 bg-linear-to-r from-blue-200 to-indigo-200"></div>
                 <div className="shrink-0">
-                  <div className="w-4 h-4 bg-gray-200 rounded-full"></div>
+                  <div className="w-4 h-4 bg-linear-to-br from-blue-300 to-indigo-300 rounded-full"></div>
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-1">
-                <div className="h-3 w-12 bg-gray-200 rounded"></div>
-                <div className="h-3 w-3 bg-gray-200 rounded"></div>
-                <div className="h-3 w-14 bg-gray-200 rounded"></div>
+                <div className="h-3 w-12 bg-linear-to-r from-blue-100 to-indigo-100 rounded"></div>
+                <div className="h-3 w-3 bg-linear-to-r from-blue-200 to-indigo-200 rounded"></div>
+                <div className="h-3 w-14 bg-linear-to-r from-blue-100 to-indigo-100 rounded"></div>
               </div>
             </div>
 
-            {/* Destination */}
             <div className="text-left min-w-20">
-              <div className="h-3 w-8 bg-gray-200 rounded"></div>
-              <div className="h-7 w-12 bg-gray-200 rounded mt-1"></div>
-              <div className="h-4 w-10 bg-gray-200 rounded mt-1"></div>
-              <div className="h-3 w-14 bg-gray-200 rounded mt-1"></div>
+              <div className="h-3 w-8 bg-linear-to-r from-blue-100 to-indigo-100 rounded"></div>
+              <div className="h-7 w-12 bg-linear-to-r from-blue-200 to-indigo-200 rounded mt-1"></div>
+              <div className="h-4 w-10 bg-linear-to-r from-blue-100 to-indigo-100 rounded mt-1"></div>
+              <div className="h-3 w-14 bg-linear-to-r from-blue-50 to-indigo-50 rounded mt-1"></div>
             </div>
           </div>
 
-          {/* Price and Book Button */}
           <div className="flex items-center gap-3 mt-2 min-w-35 shrink-0">
             <div className="text-right">
-              <div className="h-3 w-14 bg-gray-200 rounded ml-auto"></div>
-              <div className="h-7 w-16 bg-gray-200 rounded mt-1 ml-auto"></div>
+              <div className="h-3 w-14 bg-linear-to-r from-blue-100 to-indigo-100 rounded ml-auto"></div>
+              <div className="h-7 w-16 bg-linear-to-r from-blue-200 to-indigo-200 rounded mt-1 ml-auto"></div>
             </div>
             <div className="flex flex-col items-end">
-              <div className="h-10 w-24 bg-gray-200 rounded-lg"></div>
+              <div className="h-10 w-24 bg-linear-to-r from-blue-300 to-indigo-300 rounded-lg"></div>
             </div>
           </div>
         </div>
 
-        {/* Flight Details Skeleton */}
-        <div className="mt-3 pt-3 border-dashed border-t border-gray-200 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+        <div className="mt-3 pt-3 border-dashed border-t border-blue-100 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
           <div className="flex items-center gap-1">
-            <div className="w-4 h-4 bg-gray-200 rounded"></div>
-            <div className="h-4 w-20 bg-gray-200 rounded"></div>
+            <div className="w-4 h-4 bg-linear-to-r from-blue-200 to-indigo-200 rounded"></div>
+            <div className="h-4 w-20 bg-linear-to-r from-blue-100 to-indigo-100 rounded"></div>
           </div>
           <div className="flex items-center gap-1">
-            <div className="h-4 w-12 bg-gray-200 rounded"></div>
-            <div className="h-4 w-16 bg-gray-200 rounded"></div>
+            <div className="h-4 w-12 bg-linear-to-r from-blue-100 to-indigo-100 rounded"></div>
+            <div className="h-4 w-16 bg-linear-to-r from-blue-100 to-indigo-100 rounded"></div>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-4 h-4 bg-gray-200 rounded"></div>
-            <div className="h-4 w-16 bg-gray-200 rounded"></div>
+            <div className="w-4 h-4 bg-linear-to-r from-blue-200 to-indigo-200 rounded"></div>
+            <div className="h-4 w-16 bg-linear-to-r from-blue-100 to-indigo-100 rounded"></div>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-4 h-4 bg-gray-200 rounded"></div>
-            <div className="h-4 w-20 bg-gray-200 rounded"></div>
+            <div className="w-4 h-4 bg-linear-to-r from-blue-200 to-indigo-200 rounded"></div>
+            <div className="h-4 w-20 bg-linear-to-r from-blue-100 to-indigo-100 rounded"></div>
           </div>
         </div>
       </div>
@@ -105,7 +99,7 @@ const FlightResultSkeleton = () => {
   );
 };
 
-// Infinite Loader Component - Shows skeletons while loading more, or a scroll hint
+// Infinite Loader Component
 const InfiniteLoader = ({ isLoading, hasMore, onLoadMore }) => {
   const loaderRef = useRef(null);
 
@@ -136,15 +130,15 @@ const InfiniteLoader = ({ isLoading, hasMore, onLoadMore }) => {
   return (
     <div ref={loaderRef} className="space-y-4">
       {isLoading ? (
-        // Show skeleton items when loading more
         <>
           <FlightResultSkeleton />
           <FlightResultSkeleton />
         </>
       ) : (
-        // Show scroll indicator when not loading but hasMore
         <div className="py-4 flex justify-center">
-          <div className="text-sm text-gray-400">Scroll for more flights</div>
+          <div className="text-sm text-gray-400 animate-pulse">
+            Scroll for more flights ✈️
+          </div>
         </div>
       )}
     </div>
@@ -154,20 +148,20 @@ const InfiniteLoader = ({ isLoading, hasMore, onLoadMore }) => {
 // Error State Component
 const FlightResultsError = ({ error, onRetry }) => {
   return (
-    <div className="bg-white rounded-xl shadow-md border border-red-100 p-8 text-center">
+    <div className="bg-white rounded-2xl shadow-xl border border-red-100 p-10 text-center">
       <div className="flex flex-col items-center">
-        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
-          <FaExclamationTriangle className="text-red-500 text-3xl" />
+        <div className="w-20 h-20 bg-linear-to-br from-red-50 to-red-100 rounded-full flex items-center justify-center mb-4 shadow-inner">
+          <FaExclamationTriangle className="text-red-500 text-4xl" />
         </div>
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">
+        <h3 className="text-xl font-semibold text-gray-800 mb-2">
           Oops! Something went wrong
         </h3>
-        <p className="text-gray-600 mb-4 max-w-md">
+        <p className="text-gray-600 mb-6 max-w-md">
           {error || "We couldn't load the flight results. Please try again."}
         </p>
         <button
           onClick={onRetry}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-colors flex items-center gap-2"
+          className="bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 rounded-xl font-medium transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl"
         >
           <FaSearch className="text-sm" />
           Try Again
@@ -182,7 +176,6 @@ const FlightResults = ({
   loading,
   error,
   onRetry,
-  // External pagination props (optional – for API-based infinite scroll)
   hasMore: externalHasMore = null,
   isLoadingMore = false,
   onLoadMore = null,
@@ -190,40 +183,32 @@ const FlightResults = ({
   const [expandedIndex, setExpandedIndex] = useState(null);
   const [itemsPerPage] = useState(10);
   const [page, setPage] = useState(1);
-  // Track previous flights to reset page when flights change
   const [prevFlights, setPrevFlights] = useState(flights);
 
-  // Memoize totalFlights
   const totalFlights = useMemo(() => flights || [], [flights]);
 
-  // Reset page to 1 when totalFlights changes (new search results)
-  // This is done during render, not in an effect, to avoid cascading renders
   if (totalFlights !== prevFlights) {
     setPrevFlights(totalFlights);
     setPage(1);
   }
 
-  // Compute visible flights based on current page
   const visibleFlights = useMemo(() => {
     return totalFlights.slice(0, page * itemsPerPage);
   }, [totalFlights, page, itemsPerPage]);
 
-  // Determine if there are more flights to show (client-side pagination)
   const hasMoreFlights = visibleFlights.length < totalFlights.length;
 
-  // Use external hasMore if provided (for API pagination), otherwise use internal
-  const effectiveHasMore = onLoadMore ? (externalHasMore ?? false) : hasMoreFlights;
+  const effectiveHasMore = onLoadMore
+    ? (externalHasMore ?? false)
+    : hasMoreFlights;
 
-  // Load more flights when infinite scroll triggers
   const loadMoreFlights = useCallback(() => {
-    // If using external pagination, call the parent handler
     if (onLoadMore) {
       if (isLoadingMore || !externalHasMore || loading) return;
       onLoadMore();
       return;
     }
 
-    // Internal client-side pagination
     if (isLoadingMore || !hasMoreFlights || loading) return;
 
     const nextPage = page + 1;
@@ -243,7 +228,6 @@ const FlightResults = ({
     onLoadMore,
   ]);
 
-  // Show skeleton loading for initial load
   if (loading && !totalFlights.length) {
     return (
       <div className="space-y-5">
@@ -254,15 +238,22 @@ const FlightResults = ({
     );
   }
 
-  // Show error state
   if (error) {
     return <FlightResultsError error={error} onRetry={onRetry} />;
   }
 
   if (!totalFlights || totalFlights.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
-        No flights found matching your search criteria.
+      <div className="text-center py-12 text-gray-500 bg-white rounded-2xl shadow-lg border border-blue-100/50 p-10">
+        <div className="flex flex-col items-center">
+          <div className="w-16 h-16 rounded-full bg-linear-to-br from-blue-50 to-indigo-50 flex items-center justify-center mb-4">
+            <FaPlane className="text-blue-400 text-2xl" />
+          </div>
+          <p className="text-lg font-medium text-gray-600">No flights found</p>
+          <p className="text-sm text-gray-400 mt-1">
+            Try adjusting your search criteria
+          </p>
+        </div>
       </div>
     );
   }
@@ -292,7 +283,6 @@ const FlightResults = ({
     });
   };
 
-  // Truncate text helper
   const truncateText = (text, maxLength = 30) => {
     if (!text) return "N/A";
     return text.length > maxLength
@@ -301,7 +291,29 @@ const FlightResults = ({
   };
 
   const shouldShowLoader = effectiveHasMore || isLoadingMore;
-  const reachedEnd = !effectiveHasMore && visibleFlights.length === totalFlights.length && visibleFlights.length > 0;
+  const reachedEnd =
+    !effectiveHasMore &&
+    visibleFlights.length === totalFlights.length &&
+    visibleFlights.length > 0;
+
+  // Get airline color based on name
+  const getAirlineColor = (name) => {
+    const colors = [
+      "from-blue-500 to-indigo-500",
+      "from-purple-500 to-pink-500",
+      "from-green-500 to-emerald-500",
+      "from-orange-500 to-red-500",
+      "from-cyan-500 to-blue-500",
+      "from-rose-500 to-pink-500",
+      "from-violet-500 to-purple-500",
+      "from-teal-500 to-cyan-500",
+    ];
+    let hash = 0;
+    for (let i = 0; i < (name || "").length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
 
   return (
     <div className="space-y-5">
@@ -310,7 +322,6 @@ const FlightResults = ({
         const firstSegment = segments[0];
         const lastSegment = segments[segments.length - 1];
 
-        // Use first segment for origin info, last segment for destination info
         const originData = firstSegment;
         const destinationData = lastSegment;
 
@@ -321,24 +332,25 @@ const FlightResults = ({
 
         if (!originData || !destinationData) return null;
 
-        // Determine if this is a multi-segment flight
         const isMultiSegment = segments.length > 1;
+        const airlineColor = getAirlineColor(originData.CarrierName);
 
         return (
           <div
             key={`${flight.Id || index}-${index}`}
-            className="bg-white rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow overflow-visible relative"
+            className="bg-white rounded-2xl shadow-lg border border-blue-100/50 hover:shadow-2xl transition-all duration-300 overflow-visible relative group"
           >
-            {/* Refundable Badge - Top Right Half Outside */}
+            {/* Refundable Badge */}
             <div className="relative h-0">
               <div className="absolute -top-2 -right-2 z-10">
                 {flight.IsRefundable ? (
-                  <span className="inline-block bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full border border-green-200 shadow-md">
-                    ✓ Refundable
+                  <span className="inline-flex items-center gap-1 bg-linear-to-r from-green-400 to-emerald-400 text-white text-xs px-3 py-1.5 rounded-full border border-green-300 shadow-lg">
+                    <FaShieldAlt className="text-[10px]" />
+                    Refundable
                   </span>
                 ) : (
-                  <span className="inline-block bg-red-100 text-red-700 text-xs px-3 py-1 rounded-full border border-red-200 shadow-md">
-                    ✗ Non-Refundable
+                  <span className="inline-flex items-center gap-1 bg-linear-to-r from-red-400 to-rose-400 text-white text-xs px-3 py-1.5 rounded-full border border-red-300 shadow-lg">
+                    Non-Refundable
                   </span>
                 )}
               </div>
@@ -346,25 +358,27 @@ const FlightResults = ({
 
             {/* Main Content */}
             <div
-              className="p-4 cursor-pointer"
+              className="p-5 cursor-pointer"
               onClick={() => toggleExpand(index)}
             >
               {/* Airline and Route Section */}
               <div className="flex items-center justify-between gap-5 mb-3">
-                {/* Airline and Flight Number - Show first airline */}
-                <div className="flex items-center gap-2 min-w-30">
-                  <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center shadow-lg border-2 border-white shrink-0">
+                {/* Airline and Flight Number */}
+                <div className="flex items-center gap-3 min-w-30">
+                  <div
+                    className={`w-12 h-12 rounded-full bg-linear-to-br ${airlineColor} flex items-center justify-center shadow-lg border-2 border-white shrink-0 group-hover:scale-110 transition-transform duration-300`}
+                  >
                     <MdFlight className="text-white text-xl" />
                   </div>
                   <div className="min-w-0">
-                    <h1 className="font-semibold text-gray-800 truncate max-w-30">
+                    <h1 className="font-semibold text-gray-800 truncate max-w-40">
                       {originData.CarrierName || "Airline"}
                     </h1>
                     <p className="text-xs text-gray-500">
                       {originData.Carrier}
                       {originData.FlightNumber}
                       {isMultiSegment && (
-                        <span className="text-blue-500 ml-1">
+                        <span className="text-blue-500 ml-1 font-medium">
                           +{segments.length - 1} more
                         </span>
                       )}
@@ -374,13 +388,15 @@ const FlightResults = ({
 
                 {/* Flight Details */}
                 <div className="flex items-center justify-center px-4 py-2 flex-1">
-                  {/* Origin - Use first segment */}
+                  {/* Origin */}
                   <div className="text-right min-w-20">
-                    <p className="text-xs text-gray-500 font-medium">From</p>
-                    <p className="text-xl font-bold text-blue-600">
+                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">
+                      From
+                    </p>
+                    <p className="text-2xl font-bold bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                       {originData.Origin}
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm font-medium text-gray-700">
                       {formatTime(originData.DepartureTime)}
                     </p>
                     <p className="text-xs text-gray-400">
@@ -391,35 +407,37 @@ const FlightResults = ({
                   {/* Flight Path */}
                   <div className="flex-1 flex flex-col items-center px-4 max-w-45">
                     <div className="flex items-center gap-2 w-full">
-                      <div className="flex-1 h-0.5 bg-gray-300 relative">
-                        <div className="absolute -top-1 left-0 w-2 h-2 rounded-full bg-gray-400"></div>
-                        <div className="absolute -top-1 right-0 w-2 h-2 rounded-full bg-blue-500"></div>
+                      <div className="flex-1 h-0.5 bg-linear-to-r from-blue-300 to-indigo-300 relative">
+                        <div className="absolute -top-1 left-0 w-2 h-2 rounded-full bg-blue-400"></div>
+                        <div className="absolute -top-1 right-0 w-2 h-2 rounded-full bg-indigo-500"></div>
                       </div>
                       <div className="shrink-0">
-                        <FaPlane className="text-blue-500 text-sm transform rotate-45" />
+                        <FaPlane className="text-indigo-500 text-sm transform rotate-45 group-hover:rotate-90 transition-transform duration-500" />
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2 mt-1 flex-wrap justify-center">
-                      <span className="text-xs font-medium text-gray-700 whitespace-nowrap">
+                      <span className="text-xs font-semibold text-gray-700 whitespace-nowrap">
                         {totalTime?.TotalTravelDuration || "N/A"}
                       </span>
-                      <span className="text-xs text-gray-400">•</span>
-                      <span className="text-xs text-blue-600 font-medium whitespace-nowrap">
+                      <span className="text-xs text-gray-300">•</span>
+                      <span className="text-xs font-medium text-indigo-600 whitespace-nowrap">
                         {totalTime?.NoOfStop === 0
-                          ? "Non Stop"
+                          ? "✈️ Non Stop"
                           : `${totalTime?.NoOfStop} Stop${totalTime?.NoOfStop > 1 ? "s" : ""}`}
                       </span>
                     </div>
                   </div>
 
-                  {/* Destination - Use last segment */}
+                  {/* Destination */}
                   <div className="text-left min-w-20">
-                    <p className="text-xs text-gray-500 font-medium">To</p>
-                    <p className="text-xl font-bold text-blue-600">
+                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">
+                      To
+                    </p>
+                    <p className="text-2xl font-bold bg-linear-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                       {destinationData.Destination}
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm font-medium text-gray-700">
                       {formatTime(destinationData.ArrivalTime)}
                     </p>
                     <p className="text-xs text-gray-400">
@@ -429,20 +447,22 @@ const FlightResults = ({
                 </div>
 
                 {/* Price and Book Button */}
-                <div className="flex items-center gap-3 mt-2 min-w-35 shrink-0">
+                <div className="flex items-center gap-4 mt-2 min-w-35 shrink-0">
                   <div className="text-right">
-                    <p className="text-xs text-gray-500">per adult</p>
-                    <p className="text-2xl font-bold text-blue-600 whitespace-nowrap">
+                    <p className="text-xs text-gray-500 font-medium">
+                      per adult
+                    </p>
+                    <p className="text-3xl font-bold bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                       ${fare?.TotalFare?.toLocaleString() || "N/A"}
                     </p>
                   </div>
                   <div className="flex flex-col items-end">
                     <button
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                      className="bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap shadow-md hover:shadow-lg hover:scale-105"
                       onClick={(e) => e.stopPropagation()}
                       disabled={!flight.IsBookable}
                     >
-                      {flight.IsBookable ? "Book Now" : "Not Available"}
+                      {flight.IsBookable ? "Book Now ✈️" : "Not Available"}
                     </button>
                     {!flight.IsBookable && (
                       <p className="text-xs text-red-500 mt-1 whitespace-nowrap">
@@ -454,82 +474,94 @@ const FlightResults = ({
               </div>
 
               {/* Flight Details */}
-              <div className="mt-3 pt-3 border-dashed border-t border-black grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                <div className="flex items-center gap-1 text-gray-600 min-w-0">
-                  <FaUser className="text-blue-400 shrink-0" />
-                  <span className="truncate">
+              <div className="mt-3 pt-3 border-dashed border-t border-blue-100 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div className="flex items-center gap-2 text-gray-600 min-w-0">
+                  <FaUser className="text-indigo-400 shrink-0" />
+                  <span className="truncate font-medium">
                     {originData.CarrierName || "Airline"}
                   </span>
                 </div>
-                <div className="flex items-center gap-1 text-gray-600">
+                <div className="flex items-center gap-2 text-gray-600">
                   <span className="font-medium shrink-0">Flight:</span>
-                  <span className="truncate">
+                  <span className="font-semibold text-gray-800 truncate">
                     {originData.Carrier}
                     {originData.FlightNumber}
                   </span>
                 </div>
-                <div className="flex items-center gap-1 text-gray-600">
-                  <FaClock className="text-blue-400 shrink-0" />
-                  <span>{totalTime?.TotalTravelDuration}</span>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <FaClock className="text-indigo-400 shrink-0" />
+                  <span className="font-medium">
+                    {totalTime?.TotalTravelDuration}
+                  </span>
                 </div>
-                <div className="flex items-center gap-1 text-gray-600 min-w-0">
-                  <FaSuitcase className="text-blue-400 shrink-0" />
+                <div className="flex items-center gap-2 text-gray-600 min-w-0">
+                  <FaSuitcase className="text-indigo-400 shrink-0" />
                   <span
-                    className="truncate"
+                    className="truncate font-medium"
                     title={originData.AirBaggageAllowance}
                   >
                     {truncateText(originData.AirBaggageAllowance, 25) || "N/A"}
                   </span>
                 </div>
               </div>
+
+              {/* Expand/Collapse Indicator */}
+              <div className="flex justify-center mt-2 text-indigo-400">
+                {isExpanded ? (
+                  <FaChevronUp className="text-sm animate-bounce" />
+                ) : (
+                  <FaChevronDown className="text-sm" />
+                )}
+              </div>
             </div>
 
-            {/* Expanded Details Section with CSS Animation */}
+            {/* Expanded Details Section with Animation */}
             <div
-              className={`overflow-hidden transition-all duration-300 ease-in-out ${
+              className={`overflow-hidden transition-all duration-500 ease-in-out ${
                 isExpanded ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
               }`}
             >
-              <div className="border-t border-gray-200 bg-gray-50 p-4">
+              <div className="border-t-2 border-gradient-to-r from-blue-100 to-indigo-100 bg-linear-to-br p-5 rounded-b-2xl">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Left Column - Flight Details */}
                   <div className="space-y-3">
-                    <h4 className="font-semibold text-gray-700 border-b pb-2">
+                    <h4 className="font-bold text-gray-700 border-b-2 border-blue-200 pb-2 flex items-center gap-2">
+                      <FaPlane className="text-indigo-500" />
                       Flight Details
                     </h4>
 
                     <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
+                      <div className="flex justify-between py-1">
                         <span className="text-gray-600">Airline:</span>
                         <span
-                          className="font-medium truncate max-w-50"
+                          className="font-semibold text-gray-800 truncate max-w-50"
                           title={originData.CarrierName}
                         >
                           {truncateText(originData.CarrierName, 30)}
                         </span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between py-1 border-t border-blue-50">
                         <span className="text-gray-600">Flight Number:</span>
-                        <span className="font-medium">
+                        <span className="font-semibold text-gray-800">
                           {originData.Carrier}
                           {originData.FlightNumber}
                         </span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between py-1 border-t border-blue-50">
                         <span className="text-gray-600">Aircraft:</span>
                         <span
-                          className="font-medium truncate max-w-50"
+                          className="font-semibold text-gray-800 truncate max-w-50"
                           title={originData.Equipment}
                         >
                           {truncateText(originData.Equipment, 25) || "N/A"}
                         </span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between py-1 border-t border-blue-50">
                         <span className="text-gray-600">
                           Operating Carrier:
                         </span>
                         <span
-                          className="font-medium truncate max-w-50"
+                          className="font-semibold text-gray-800 truncate max-w-50"
                           title={originData.OperatingCarrierName}
                         >
                           {truncateText(
@@ -539,61 +571,51 @@ const FlightResults = ({
                           )}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Operating Flight:</span>
-                        <span className="font-medium">
-                          {originData.OperatingCarrier}
-                          {originData.OperatingFlightNumber}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between py-1 border-t border-blue-50">
                         <span className="text-gray-600">Booking Code:</span>
-                        <span className="font-medium">
+                        <span className="font-semibold text-gray-800">
                           {originData.BookingCode}
                         </span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Booking Count:</span>
-                        <span className="font-medium">
-                          {originData.BookingCount}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between py-1 border-t border-blue-50">
                         <span className="text-gray-600">Fare Basis:</span>
                         <span
-                          className="font-medium truncate max-w-50"
+                          className="font-semibold text-gray-800 truncate max-w-50"
                           title={originData.FareBasis}
                         >
                           {truncateText(originData.FareBasis, 25) || "N/A"}
                         </span>
                       </div>
 
-                      {/* Show all segments in expanded view */}
+                      {/* All segments */}
                       {isMultiSegment && (
-                        <div className="mt-3 pt-3 border-t border-gray-200">
-                          <h5 className="font-semibold text-gray-600 text-sm mb-2">
+                        <div className="mt-3 pt-3 border-t-2 border-blue-200">
+                          <h5 className="font-semibold text-gray-700 text-sm mb-2 flex items-center gap-2">
+                            <FaPlane className="text-indigo-400 text-xs" />
                             All Segments ({segments.length})
                           </h5>
                           {segments.map((segment, idx) => (
                             <div
                               key={idx}
-                              className="bg-white p-2 rounded border border-gray-200 mb-2 text-xs"
+                              className="bg-white p-3 rounded-xl border border-blue-100 mb-2 text-sm shadow-sm hover:shadow-md transition-shadow"
                             >
-                              <div className="flex justify-between">
-                                <span className="text-gray-600">
+                              <div className="flex justify-between items-center">
+                                <span className="font-semibold text-gray-800">
                                   {segment.Origin} → {segment.Destination}
                                 </span>
-                                <span className="font-medium">
+                                <span className="font-medium text-indigo-600">
                                   {segment.Carrier}
                                   {segment.FlightNumber}
                                 </span>
                               </div>
-                              <div className="flex justify-between text-gray-500">
+                              <div className="flex justify-between text-gray-500 text-xs mt-1">
                                 <span>
                                   {formatTime(segment.DepartureTime)} -{" "}
                                   {formatTime(segment.ArrivalTime)}
                                 </span>
-                                <span>{segment.TravelDuration}</span>
+                                <span className="font-medium">
+                                  {segment.TravelDuration}
+                                </span>
                               </div>
                             </div>
                           ))}
@@ -604,64 +626,65 @@ const FlightResults = ({
 
                   {/* Right Column - Fare Details */}
                   <div className="space-y-3">
-                    <h4 className="font-semibold text-gray-700 border-b pb-2">
+                    <h4 className="font-bold text-gray-700 border-b-2 border-blue-200 pb-2 flex items-center gap-2">
+                      <FaStar className="text-yellow-500" />
                       Fare Breakdown
                     </h4>
 
                     {fare && (
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
+                      <div className="space-y-2 text-sm bg-white p-4 rounded-xl shadow-sm">
+                        <div className="flex justify-between py-1">
                           <span className="text-gray-600">Base Fare:</span>
-                          <span className="font-medium">
+                          <span className="font-semibold text-gray-800">
                             ${fare.BaseFare?.toLocaleString()}
                           </span>
                         </div>
-                        <div className="flex justify-between">
+                        <div className="flex justify-between py-1 border-t border-blue-50">
                           <span className="text-gray-600">Total Tax:</span>
-                          <span className="font-medium">
+                          <span className="font-semibold text-gray-800">
                             ${fare.TotalTax?.toLocaleString()}
                           </span>
                         </div>
                         {fare.ApiDiscount > 0 && (
-                          <div className="flex justify-between">
+                          <div className="flex justify-between py-1 border-t border-blue-50">
                             <span className="text-gray-600">Discount:</span>
-                            <span className="font-medium text-green-600">
+                            <span className="font-semibold text-green-600">
                               -${fare.ApiDiscount?.toLocaleString()}
                             </span>
                           </div>
                         )}
                         {fare.Fees > 0 && (
-                          <div className="flex justify-between">
+                          <div className="flex justify-between py-1 border-t border-blue-50">
                             <span className="text-gray-600">Fees:</span>
-                            <span className="font-medium">
+                            <span className="font-semibold text-gray-800">
                               ${fare.Fees?.toLocaleString()}
                             </span>
                           </div>
                         )}
                         {fare.TaxesBreakdown &&
                           fare.TaxesBreakdown.length > 0 && (
-                            <div className="mt-2 pt-2 border-t border-gray-200">
-                              <span className="text-gray-600 text-xs block mb-1">
+                            <div className="mt-2 pt-2 border-t-2 border-blue-100">
+                              <span className="text-gray-600 text-xs block mb-1 font-medium">
                                 Tax Breakdown:
                               </span>
                               {fare.TaxesBreakdown.map((tax, idx) => (
                                 <div
                                   key={idx}
-                                  className="flex justify-between text-xs pl-2"
+                                  className="flex justify-between text-xs py-0.5 pl-2"
                                 >
                                   <span className="text-gray-500">
                                     {tax.Category}:
                                   </span>
-                                  <span className="font-medium">
+                                  <span className="font-medium text-gray-700">
                                     ${tax.Amount}
                                   </span>
                                 </div>
                               ))}
                             </div>
                           )}
-                        <div className="flex justify-between pt-2 border-t border-gray-200 font-bold">
-                          <span>Total Fare:</span>
-                          <span className="text-blue-600">
+                        <div className="flex justify-between pt-3 border-t-2 border-blue-200 font-bold">
+                          <span className="text-gray-800">Total Fare:</span>
+                          <span className="text-xl bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                             ${fare.TotalFare?.toLocaleString()}
                           </span>
                         </div>
@@ -672,8 +695,9 @@ const FlightResults = ({
 
                 {/* Branded Fare Details */}
                 {brandedFareInfo?.BrandedFareInfoDetail && (
-                  <div className="mt-4 pt-3 border-t border-gray-200">
-                    <h4 className="font-semibold text-gray-700 mb-2">
+                  <div className="mt-4 pt-3 border-t-2 border-blue-200">
+                    <h4 className="font-bold text-gray-700 mb-3 flex items-center gap-2">
+                      <FaShieldAlt className="text-indigo-500" />
                       Fare Features
                     </h4>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
@@ -682,20 +706,20 @@ const FlightResults = ({
                       ).map(([key, value]) => (
                         <div
                           key={key}
-                          className="bg-white p-2 rounded border border-gray-200"
+                          className="bg-white p-3 rounded-xl border border-blue-100 shadow-sm hover:shadow-md transition-shadow"
                         >
-                          <span className="text-xs text-gray-500 block">
+                          <span className="text-xs font-medium text-indigo-500 uppercase tracking-wider block">
                             {key}
                           </span>
                           <span
-                            className="font-medium text-sm truncate block"
+                            className="font-semibold text-gray-800 text-sm truncate block mt-1"
                             title={value.Text}
                           >
                             {truncateText(value.Text, 30)}
                           </span>
                           {value.OtherText && (
                             <span
-                              className="text-xs text-gray-400 truncate block"
+                              className="text-xs text-gray-400 truncate block mt-0.5"
                               title={value.OtherText}
                             >
                               {truncateText(value.OtherText, 25)}
@@ -708,34 +732,52 @@ const FlightResults = ({
                 )}
 
                 {/* Additional Info */}
-                <div className="mt-4 pt-3 border-t border-gray-200 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-gray-500">
+                <div className="mt-4 pt-3 border-t-2 border-blue-200 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-gray-500">
                   <div>
-                    <span className="font-medium">Trip Type:</span>{" "}
+                    <span className="font-medium text-gray-600">
+                      Trip Type:
+                    </span>{" "}
                     {flight.TripType || "N/A"}
                   </div>
                   <div>
-                    <span className="font-medium">Plating Carrier:</span>{" "}
+                    <span className="font-medium text-gray-600">
+                      Plating Carrier:
+                    </span>{" "}
                     {truncateText(flight.PlatingCarrierName, 20) || "N/A"}
                   </div>
                   <div>
-                    <span className="font-medium">Passenger Type:</span>{" "}
+                    <span className="font-medium text-gray-600">
+                      Passenger Type:
+                    </span>{" "}
                     {flight.PassengerType || "N/A"}
                   </div>
                   <div>
-                    <span className="font-medium">Bookable:</span>{" "}
-                    {flight.IsBookable ? "Yes" : "No"}
+                    <span className="font-medium text-gray-600">Bookable:</span>{" "}
+                    <span
+                      className={
+                        flight.IsBookable
+                          ? "text-green-600 font-semibold"
+                          : "text-red-500"
+                      }
+                    >
+                      {flight.IsBookable ? "Yes ✅" : "No ❌"}
+                    </span>
                   </div>
                   <div>
-                    <span className="font-medium">Fare Type:</span>{" "}
+                    <span className="font-medium text-gray-600">
+                      Fare Type:
+                    </span>{" "}
                     {flight.FareType || "N/A"}
                   </div>
                   <div>
-                    <span className="font-medium">Currency:</span>{" "}
+                    <span className="font-medium text-gray-600">Currency:</span>{" "}
                     {originData.Currency || "BDT"}
                   </div>
                   {isMultiSegment && (
                     <div>
-                      <span className="font-medium">Segments:</span>{" "}
+                      <span className="font-medium text-gray-600">
+                        Segments:
+                      </span>{" "}
                       {segments.length}
                     </div>
                   )}
@@ -746,7 +788,7 @@ const FlightResults = ({
         );
       })}
 
-      {/* Infinite Loader - shows skeletons when loading more, or scroll hint */}
+      {/* Infinite Loader */}
       {shouldShowLoader && (
         <InfiniteLoader
           isLoading={isLoadingMore}
@@ -755,13 +797,14 @@ const FlightResults = ({
         />
       )}
 
-      {/* End of list message - shown when no more flights to load */}
+      {/* End of list message */}
       {reachedEnd && (
-        <div className="text-center py-6 mt-2 border-t border-gray-200">
-          <div className="flex items-center justify-center gap-2 text-gray-500">
-            <FaInfoCircle className="text-blue-400 text-lg" />
+        <div className="text-center py-8 mt-4 border-t-2 border-blue-100">
+          <div className="flex items-center justify-center gap-3 text-gray-500">
+            <FaInfoCircle className="text-indigo-400 text-xl" />
             <p className="text-sm font-medium">
-              No more flights available. Try adjusting your search criteria.
+              🎉 You've seen all available flights. Try adjusting your search
+              for more options.
             </p>
           </div>
         </div>
