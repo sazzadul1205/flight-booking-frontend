@@ -186,14 +186,24 @@ const Search = () => {
   const [citySuggestions, setCitySuggestions] = useState([]);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTravelerPicker, setShowTravelerPicker] = useState(false);
-  const [flights, setFlights] = useState([]);
-  const [filteredFlights, setFilteredFlights] = useState([]);
+  const [flights, setFlights] = useState([]); // ALL flights from search
   const [filterOptions, setFilterOptions] = useState({});
   const [loading, setLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
 
   // Store IGXKey for caching
   const [igxKey, setIgxKey] = useState(null);
+
+  // Pagination states - THIS IS WHAT SHOWS ON SCREEN
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0,
+    hasMore: false,
+  });
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [displayFlights, setDisplayFlights] = useState([]); // Only the current page
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -262,30 +272,44 @@ const Search = () => {
     });
   }, [filters]);
 
-  // REAL-TIME FILTER FUNCTION - Called automatically on filter changes
-  const applyFiltersRealtime = useCallback(async () => {
-    // Clear any pending debounce
-    if (filterDebounceTimer.current) {
-      clearTimeout(filterDebounceTimer.current);
-      filterDebounceTimer.current = null;
-    }
+  // Apply filters function with pagination - UPDATED to use setDisplayFlights
+  const applyFilters = useCallback(
+    async (page = 1, append = false) => {
+      // If no IGXKey or no flights, skip
+      if (!igxKey || flights.length === 0) {
+        setDisplayFlights(flights);
+        return;
+      }
 
-    // If no IGXKey or no flights, skip
-    if (!igxKey || flights.length === 0) {
-      setFilteredFlights(flights);
-      return;
-    }
+      // If no filters are selected, use the raw flights with pagination
+      if (!hasActiveFilters()) {
+        console.log("No filters selected, paginating all flights");
+        const startIndex = (page - 1) * 20;
+        const endIndex = Math.min(startIndex + 20, flights.length);
+        const pageData = flights.slice(startIndex, endIndex);
 
-    // If no filters are selected, show all flights
-    if (!hasActiveFilters()) {
-      console.log("No filters selected, showing all flights");
-      setFilteredFlights(flights);
-      setSearchError("");
-      return;
-    }
+        if (append) {
+          setDisplayFlights((prev) => [...prev, ...pageData]);
+        } else {
+          setDisplayFlights(pageData);
+        }
 
-    // Debounce the API call (300ms delay)
-    filterDebounceTimer.current = setTimeout(async () => {
+        setPagination({
+          page: page,
+          limit: 20,
+          total: flights.length,
+          totalPages: Math.ceil(flights.length / 20),
+          hasMore: endIndex < flights.length,
+        });
+        setSearchError("");
+        return;
+      }
+
+      // If loading more, set the flag
+      if (page > 1) {
+        setIsLoadingMore(true);
+      }
+
       setFilterLoading(true);
       setSearchError("");
 
@@ -330,19 +354,34 @@ const Search = () => {
           }
         });
 
-        console.log("Sending real-time filter request with IGXKey:", igxKey);
-        console.log("Filter data:", filterData);
+        console.log("Sending filter request with IGXKey:", igxKey);
+        console.log("Page:", page, "Append:", append);
 
-        // Use the new filter API with IGXKey
-        const response = await filterFlights(igxKey, filterData);
+        // Use the new filter API with IGXKey and pagination
+        const response = await filterFlights(igxKey, filterData, page, 20);
         console.log("Filter response:", response);
 
         const filtered = response.data || [];
         console.log("Filtered flights count:", filtered.length);
 
-        setFilteredFlights(filtered);
+        // Handle paginated response
+        if (append) {
+          setDisplayFlights((prev) => [...prev, ...filtered]);
+        } else {
+          setDisplayFlights(filtered);
+        }
 
-        if (filtered.length === 0) {
+        setPagination(
+          response.pagination || {
+            page: 1,
+            limit: 20,
+            total: filtered.length,
+            totalPages: Math.ceil(filtered.length / 20),
+            hasMore: false,
+          },
+        );
+
+        if (filtered.length === 0 && page === 1) {
           setSearchError("No flights match your filter criteria");
         } else {
           setSearchError("");
@@ -365,12 +404,32 @@ const Search = () => {
         }
       } finally {
         setFilterLoading(false);
-        filterDebounceTimer.current = null;
+        setIsLoadingMore(false);
       }
-    }, 300); // 300ms debounce for smooth UX
-  }, [igxKey, flights, filters, extractFilterValues, hasActiveFilters]);
+    },
+    [igxKey, flights, hasActiveFilters, filters, extractFilterValues],
+  );
 
-  // Auto-trigger filter when filters change (REAL-TIME) - FIXED
+  // Load more function for infinite scroll
+  const loadMore = useCallback(() => {
+    console.log("🔍 loadMore called:", {
+      hasMore: pagination.hasMore,
+      isLoadingMore,
+      filterLoading,
+      currentPage: pagination.page,
+    });
+
+    if (!pagination.hasMore || isLoadingMore || filterLoading) {
+      console.log("⛔ Skipping loadMore - conditions not met");
+      return;
+    }
+
+    const nextPage = pagination.page + 1;
+    console.log("📄 Loading page:", nextPage);
+    applyFilters(nextPage, true);
+  }, [pagination, isLoadingMore, filterLoading, applyFilters]);
+
+  // Auto-trigger filter when filters change (REAL-TIME)
   useEffect(() => {
     // Skip on initial mount or if no IGXKey/flights
     if (!igxKey || flights.length === 0) {
@@ -394,8 +453,26 @@ const Search = () => {
     // Update previous filters ref
     previousFiltersRef.current = filters;
 
-    // Trigger real-time filter with debounce
-    applyFiltersRealtime();
+    // Reset pagination when filters change
+    setPagination({
+      page: 1,
+      limit: 20,
+      total: 0,
+      totalPages: 0,
+      hasMore: false,
+    });
+    setDisplayFlights([]);
+
+    // Clear any pending debounce
+    if (filterDebounceTimer.current) {
+      clearTimeout(filterDebounceTimer.current);
+      filterDebounceTimer.current = null;
+    }
+
+    // Debounce the filter call
+    filterDebounceTimer.current = setTimeout(() => {
+      applyFilters(1, false);
+    }, 300);
 
     // Cleanup debounce on unmount or before next effect
     return () => {
@@ -404,7 +481,7 @@ const Search = () => {
         filterDebounceTimer.current = null;
       }
     };
-  }, [filters, igxKey, flights.length, applyFiltersRealtime]);
+  }, [filters, igxKey, flights.length, applyFilters]);
 
   const resetFilters = useCallback(() => {
     setFilters({
@@ -431,8 +508,15 @@ const Search = () => {
       return_destination_airport: [],
     });
     setSelectedAirlines([]);
-    setFilteredFlights([]);
+    setDisplayFlights([]);
     setSearchError("");
+    setPagination({
+      page: 1,
+      limit: 20,
+      total: 0,
+      totalPages: 0,
+      hasMore: false,
+    });
     // Reset the first-run flag so future filter changes will trigger
     isFirstFilterRun.current = true;
     previousFiltersRef.current = {
@@ -506,11 +590,18 @@ const Search = () => {
     async (formattedParams) => {
       // Reset everything for new search
       setFlights([]);
-      setFilteredFlights([]);
+      setDisplayFlights([]);
       setFilterOptions({});
       setIgxKey(null);
       setLoading(true);
       setSearchError("");
+      setPagination({
+        page: 1,
+        limit: 20,
+        total: 0,
+        totalPages: 0,
+        hasMore: false,
+      });
 
       // Reset filter tracking refs
       isFirstFilterRun.current = true;
@@ -526,7 +617,6 @@ const Search = () => {
         const data = await searchFlights(formattedParams);
         const results = data.data || [];
         setFlights(results);
-        setFilteredFlights([]);
 
         // Store IGXKey for future filter operations
         if (data.igxKey) {
@@ -540,6 +630,20 @@ const Search = () => {
         }
 
         resetFilters();
+
+        // After resetting filters, load the first page
+        if (results.length > 0) {
+          // Show first page (20 items)
+          const firstPage = results.slice(0, 20);
+          setDisplayFlights(firstPage);
+          setPagination({
+            page: 1,
+            limit: 20,
+            total: results.length,
+            totalPages: Math.ceil(results.length / 20),
+            hasMore: results.length > 20,
+          });
+        }
 
         if (results.length === 0) {
           setSearchError("No flights found for your search criteria");
@@ -563,7 +667,7 @@ const Search = () => {
         setLoading(false);
       }
     },
-    [resetFilters, filters],
+    [filters, resetFilters],
   );
 
   const sortCitiesByRelevance = useCallback((cities, query) => {
@@ -798,9 +902,6 @@ const Search = () => {
       DepartureDate: formattedDate,
     });
   };
-
-  // Determine which flights to display (filtered or all)
-  const displayFlights = filteredFlights.length > 0 ? filteredFlights : flights;
 
   // Check if we should show loading state
   const showLoading =
@@ -1048,7 +1149,6 @@ const Search = () => {
               setSelectedAirlines={setSelectedAirlines}
               journeyType={searchParams.JourneyType}
               filterLoading={true}
-              applyFilters={() => {}}
             />
           </div>
           <div className="w-2/3">
@@ -1076,17 +1176,19 @@ const Search = () => {
               setSelectedAirlines={setSelectedAirlines}
               journeyType={searchParams.JourneyType}
               filterLoading={filterLoading}
-              applyFilters={() => {}}
             />
           </div>
 
-          {/* Flight Results */}
+          {/* Flight Results with Infinite Scroll */}
           <div className="w-2/3">
             <FlightResults
               flights={displayFlights}
-              loading={loading || filterLoading}
+              loading={loading}
               error={searchError}
               onRetry={handleSearch}
+              hasMore={pagination.hasMore}
+              isLoadingMore={isLoadingMore}
+              onLoadMore={loadMore}
             />
           </div>
         </div>
@@ -1105,7 +1207,6 @@ const Search = () => {
               setSelectedAirlines={setSelectedAirlines}
               journeyType={searchParams.JourneyType}
               filterLoading={false}
-              applyFilters={() => {}}
             />
           </div>
           <div className="w-2/3">

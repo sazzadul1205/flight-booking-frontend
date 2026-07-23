@@ -1,5 +1,5 @@
 // FlightResults.jsx
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   FaClock,
   FaUser,
@@ -15,7 +15,7 @@ import {
 } from "react-icons/fa";
 import { MdFlight } from "react-icons/md";
 
-// Skeleton Loading Component with vibrant gradient
+// Skeleton Loading Component
 const FlightResultSkeleton = () => {
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-blue-100/50 overflow-hidden relative animate-pulse">
@@ -99,46 +99,50 @@ const FlightResultSkeleton = () => {
   );
 };
 
-// Infinite Loader Component
+// Infinite Loader Component - FIXED
 const InfiniteLoader = ({ isLoading, hasMore, onLoadMore }) => {
   const loaderRef = useRef(null);
 
   useEffect(() => {
     const currentLoaderRef = loaderRef.current;
-    if (!isLoading && hasMore && currentLoaderRef) {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting && hasMore && !isLoading) {
-            onLoadMore();
-          }
-        },
-        { threshold: 0.1 },
-      );
 
-      observer.observe(currentLoaderRef);
+    if (!currentLoaderRef || !hasMore || isLoading) return;
 
-      return () => {
-        if (currentLoaderRef) {
-          observer.unobserve(currentLoaderRef);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !isLoading) {
+          console.log("🔄 InfiniteLoader triggered - loading more...");
+          onLoadMore();
         }
-      };
-    }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: "100px", // Trigger slightly before reaching the bottom
+      },
+    );
+
+    observer.observe(currentLoaderRef);
+
+    return () => {
+      if (currentLoaderRef) {
+        observer.unobserve(currentLoaderRef);
+      }
+      observer.disconnect();
+    };
   }, [isLoading, hasMore, onLoadMore]);
 
   if (!hasMore) return null;
 
   return (
-    <div ref={loaderRef} className="space-y-4">
+    <div ref={loaderRef} className="py-6 flex justify-center">
       {isLoading ? (
-        <>
-          <FlightResultSkeleton />
-          <FlightResultSkeleton />
-        </>
+        <div className="flex items-center gap-3 text-indigo-600">
+          <div className="animate-spin rounded-full h-5 w-5 border-2 border-indigo-600 border-t-transparent"></div>
+          <span className="text-sm font-medium">Loading more flights...</span>
+        </div>
       ) : (
-        <div className="py-4 flex justify-center">
-          <div className="text-sm text-gray-400 animate-pulse">
-            Scroll for more flights ✈️
-          </div>
+        <div className="text-sm text-gray-400 animate-pulse flex items-center gap-2">
+          <span>⬇️ Scroll for more flights</span>
         </div>
       )}
     </div>
@@ -176,57 +180,13 @@ const FlightResults = ({
   loading,
   error,
   onRetry,
-  hasMore: externalHasMore = null,
+  hasMore: externalHasMore = false,
   isLoadingMore = false,
   onLoadMore = null,
 }) => {
   const [expandedIndex, setExpandedIndex] = useState(null);
-  const [itemsPerPage] = useState(10);
-  const [page, setPage] = useState(1);
-  const [prevFlights, setPrevFlights] = useState(flights);
 
   const totalFlights = useMemo(() => flights || [], [flights]);
-
-  if (totalFlights !== prevFlights) {
-    setPrevFlights(totalFlights);
-    setPage(1);
-  }
-
-  const visibleFlights = useMemo(() => {
-    return totalFlights.slice(0, page * itemsPerPage);
-  }, [totalFlights, page, itemsPerPage]);
-
-  const hasMoreFlights = visibleFlights.length < totalFlights.length;
-
-  const effectiveHasMore = onLoadMore
-    ? (externalHasMore ?? false)
-    : hasMoreFlights;
-
-  const loadMoreFlights = useCallback(() => {
-    if (onLoadMore) {
-      if (isLoadingMore || !externalHasMore || loading) return;
-      onLoadMore();
-      return;
-    }
-
-    if (isLoadingMore || !hasMoreFlights || loading) return;
-
-    const nextPage = page + 1;
-    const endIndex = nextPage * itemsPerPage;
-
-    if (endIndex <= totalFlights.length) {
-      setPage(nextPage);
-    }
-  }, [
-    page,
-    itemsPerPage,
-    totalFlights,
-    hasMoreFlights,
-    externalHasMore,
-    isLoadingMore,
-    loading,
-    onLoadMore,
-  ]);
 
   if (loading && !totalFlights.length) {
     return (
@@ -290,11 +250,8 @@ const FlightResults = ({
       : text;
   };
 
-  const shouldShowLoader = effectiveHasMore || isLoadingMore;
   const reachedEnd =
-    !effectiveHasMore &&
-    visibleFlights.length === totalFlights.length &&
-    visibleFlights.length > 0;
+    !externalHasMore && totalFlights.length > 0 && !isLoadingMore;
 
   // Get airline color based on name
   const getAirlineColor = (name) => {
@@ -317,7 +274,7 @@ const FlightResults = ({
 
   return (
     <div className="space-y-5">
-      {visibleFlights.map((flight, index) => {
+      {totalFlights.map((flight, index) => {
         const segments = flight.Onwards || [];
         const firstSegment = segments[0];
         const lastSegment = segments[segments.length - 1];
@@ -788,23 +745,22 @@ const FlightResults = ({
         );
       })}
 
-      {/* Infinite Loader */}
-      {shouldShowLoader && (
+      {/* Infinite Loader - Always show if hasMore is true */}
+      {externalHasMore && (
         <InfiniteLoader
           isLoading={isLoadingMore}
-          hasMore={effectiveHasMore}
-          onLoadMore={loadMoreFlights}
+          hasMore={externalHasMore}
+          onLoadMore={onLoadMore}
         />
       )}
 
       {/* End of list message */}
-      {reachedEnd && (
+      {reachedEnd && totalFlights.length > 0 && (
         <div className="text-center py-8 mt-4 border-t-2 border-blue-100">
           <div className="flex items-center justify-center gap-3 text-gray-500">
             <FaInfoCircle className="text-indigo-400 text-xl" />
             <p className="text-sm font-medium">
-              🎉 You've seen all available flights. Try adjusting your search
-              for more options.
+              🎉 You've seen all available flights.
             </p>
           </div>
         </div>

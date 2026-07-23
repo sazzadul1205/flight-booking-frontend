@@ -43,7 +43,7 @@ export const searchFlights = async (searchParams) => {
   return response.data;
 };
 
-// Get cities - added signal support
+// Get cities
 export const getCities = async (query, signal) => {
   const response = await axios.get(
     `${API_URL}/cities?input=${query}`,
@@ -58,11 +58,16 @@ export const getAirlines = async () => {
   return response.data;
 };
 
-// Filter flights using IGXKey (NEW)
-export const filterFlights = async (igxKey, filter) => {
+// Filter flights with pagination support
+export const filterFlights = async (igxKey, filter, page = 1, limit = 10) => {
   const response = await axios.post(
     `${API_URL}/filter`,
-    { igxKey, filter },
+    {
+      igxKey,
+      filter,
+      page,
+      limit,
+    },
     authConfig(),
   );
   return response.data;
