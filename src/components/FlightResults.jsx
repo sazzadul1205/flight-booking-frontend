@@ -1,5 +1,5 @@
 // FlightResults.jsx
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   FaClock,
   FaUser,
@@ -7,6 +7,7 @@ import {
   FaPlane,
   FaExclamationTriangle,
   FaSearch,
+  FaInfoCircle,
 } from "react-icons/fa";
 import { MdFlight } from "react-icons/md";
 
@@ -104,6 +105,52 @@ const FlightResultSkeleton = () => {
   );
 };
 
+// Infinite Loader Component - Shows skeletons while loading more, or a scroll hint
+const InfiniteLoader = ({ isLoading, hasMore, onLoadMore }) => {
+  const loaderRef = useRef(null);
+
+  useEffect(() => {
+    const currentLoaderRef = loaderRef.current;
+    if (!isLoading && hasMore && currentLoaderRef) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0].isIntersecting && hasMore && !isLoading) {
+            onLoadMore();
+          }
+        },
+        { threshold: 0.1 },
+      );
+
+      observer.observe(currentLoaderRef);
+
+      return () => {
+        if (currentLoaderRef) {
+          observer.unobserve(currentLoaderRef);
+        }
+      };
+    }
+  }, [isLoading, hasMore, onLoadMore]);
+
+  if (!hasMore) return null;
+
+  return (
+    <div ref={loaderRef} className="space-y-4">
+      {isLoading ? (
+        // Show skeleton items when loading more
+        <>
+          <FlightResultSkeleton />
+          <FlightResultSkeleton />
+        </>
+      ) : (
+        // Show scroll indicator when not loading but hasMore
+        <div className="py-4 flex justify-center">
+          <div className="text-sm text-gray-400">Scroll for more flights</div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Error State Component
 const FlightResultsError = ({ error, onRetry }) => {
   return (
@@ -130,11 +177,74 @@ const FlightResultsError = ({ error, onRetry }) => {
   );
 };
 
-const FlightResults = ({ flights, loading, error, onRetry }) => {
+const FlightResults = ({
+  flights,
+  loading,
+  error,
+  onRetry,
+  // External pagination props (optional – for API-based infinite scroll)
+  hasMore: externalHasMore = null,
+  isLoadingMore = false,
+  onLoadMore = null,
+}) => {
   const [expandedIndex, setExpandedIndex] = useState(null);
+  const [itemsPerPage] = useState(10);
+  const [page, setPage] = useState(1);
+  // Track previous flights to reset page when flights change
+  const [prevFlights, setPrevFlights] = useState(flights);
 
-  // Show skeleton loading
-  if (loading) {
+  // Memoize totalFlights
+  const totalFlights = useMemo(() => flights || [], [flights]);
+
+  // Reset page to 1 when totalFlights changes (new search results)
+  // This is done during render, not in an effect, to avoid cascading renders
+  if (totalFlights !== prevFlights) {
+    setPrevFlights(totalFlights);
+    setPage(1);
+  }
+
+  // Compute visible flights based on current page
+  const visibleFlights = useMemo(() => {
+    return totalFlights.slice(0, page * itemsPerPage);
+  }, [totalFlights, page, itemsPerPage]);
+
+  // Determine if there are more flights to show (client-side pagination)
+  const hasMoreFlights = visibleFlights.length < totalFlights.length;
+
+  // Use external hasMore if provided (for API pagination), otherwise use internal
+  const effectiveHasMore = onLoadMore ? (externalHasMore ?? false) : hasMoreFlights;
+
+  // Load more flights when infinite scroll triggers
+  const loadMoreFlights = useCallback(() => {
+    // If using external pagination, call the parent handler
+    if (onLoadMore) {
+      if (isLoadingMore || !externalHasMore || loading) return;
+      onLoadMore();
+      return;
+    }
+
+    // Internal client-side pagination
+    if (isLoadingMore || !hasMoreFlights || loading) return;
+
+    const nextPage = page + 1;
+    const endIndex = nextPage * itemsPerPage;
+
+    if (endIndex <= totalFlights.length) {
+      setPage(nextPage);
+    }
+  }, [
+    page,
+    itemsPerPage,
+    totalFlights,
+    hasMoreFlights,
+    externalHasMore,
+    isLoadingMore,
+    loading,
+    onLoadMore,
+  ]);
+
+  // Show skeleton loading for initial load
+  if (loading && !totalFlights.length) {
     return (
       <div className="space-y-5">
         {[...Array(3)].map((_, index) => (
@@ -149,7 +259,7 @@ const FlightResults = ({ flights, loading, error, onRetry }) => {
     return <FlightResultsError error={error} onRetry={onRetry} />;
   }
 
-  if (!flights || flights.length === 0) {
+  if (!totalFlights || totalFlights.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
         No flights found matching your search criteria.
@@ -190,11 +300,12 @@ const FlightResults = ({ flights, loading, error, onRetry }) => {
       : text;
   };
 
-  // console.log(flights[0]);
+  const shouldShowLoader = effectiveHasMore || isLoadingMore;
+  const reachedEnd = !effectiveHasMore && visibleFlights.length === totalFlights.length && visibleFlights.length > 0;
 
   return (
     <div className="space-y-5">
-      {flights.map((flight, index) => {
+      {visibleFlights.map((flight, index) => {
         const segments = flight.Onwards || [];
         const firstSegment = segments[0];
         const lastSegment = segments[segments.length - 1];
@@ -215,7 +326,7 @@ const FlightResults = ({ flights, loading, error, onRetry }) => {
 
         return (
           <div
-            key={index}
+            key={`${flight.Id || index}-${index}`}
             className="bg-white rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow overflow-visible relative"
           >
             {/* Refundable Badge - Top Right Half Outside */}
@@ -634,6 +745,27 @@ const FlightResults = ({ flights, loading, error, onRetry }) => {
           </div>
         );
       })}
+
+      {/* Infinite Loader - shows skeletons when loading more, or scroll hint */}
+      {shouldShowLoader && (
+        <InfiniteLoader
+          isLoading={isLoadingMore}
+          hasMore={effectiveHasMore}
+          onLoadMore={loadMoreFlights}
+        />
+      )}
+
+      {/* End of list message - shown when no more flights to load */}
+      {reachedEnd && (
+        <div className="text-center py-6 mt-2 border-t border-gray-200">
+          <div className="flex items-center justify-center gap-2 text-gray-500">
+            <FaInfoCircle className="text-blue-400 text-lg" />
+            <p className="text-sm font-medium">
+              No more flights available. Try adjusting your search criteria.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

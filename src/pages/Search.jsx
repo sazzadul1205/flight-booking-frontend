@@ -778,6 +778,12 @@ const Search = () => {
   // Determine which flights to display (filtered or all)
   const displayFlights = filteredFlights.length > 0 ? filteredFlights : flights;
 
+  // Check if we should show loading state
+  const showLoading =
+    loading || (flights.length === 0 && !searchError && !loading);
+  const showResults = displayFlights.length > 0 && !searchError;
+  const showError = searchError && !loading;
+
   return (
     <div className="min-h-screen bg-gray-200">
       {/* Main Content */}
@@ -1005,31 +1011,36 @@ const Search = () => {
         </div>
       </div>
 
-      {/* Show skeleton when loading and no flights yet */}
-      {(loading || (flights.length === 0 && !searchError && !loading)) &&
-        displayFlights.length === 0 && (
-          <div className="flex items-start gap-2 px-5 mt-5">
-            <div className="w-1/3">
-              <FlightFilters
-                filters={filters}
-                setFilters={setFilters}
-                filterOptions={filterOptions}
-                airlines={airlinesList}
-                selectedAirlines={selectedAirlines}
-                setSelectedAirlines={setSelectedAirlines}
-                journeyType={searchParams.JourneyType}
-                filterLoading={true}
-                applyFilters={applyFilters}
-              />
-            </div>
-            <div className="w-2/3">
-              <FlightResults flights={[]} loading={true} error={null} />
-            </div>
+      {/* Show infinite loader/skeleton when loading */}
+      {showLoading && (
+        <div className="flex items-start gap-2 px-5 mt-5">
+          <div className="w-1/3">
+            <FlightFilters
+              filters={filters}
+              setFilters={setFilters}
+              filterOptions={filterOptions}
+              airlines={airlinesList}
+              selectedAirlines={selectedAirlines}
+              setSelectedAirlines={setSelectedAirlines}
+              journeyType={searchParams.JourneyType}
+              filterLoading={true}
+              applyFilters={applyFilters}
+            />
           </div>
-        )}
+          <div className="w-2/3">
+            <FlightResults
+              flights={[]}
+              loading={true}
+              error={null}
+              // Add infinite loading prop if your FlightResults component supports it
+              infiniteLoading={true}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Flight Results */}
-      {displayFlights.length > 0 && !searchError && (
+      {showResults && (
         <div className="flex items-start gap-2 px-5 mt-5">
           {/* Filter List */}
           <div className="w-1/3">
@@ -1059,7 +1070,7 @@ const Search = () => {
       )}
 
       {/* Show error state when there's an error */}
-      {searchError && !loading && (
+      {showError && (
         <div className="flex items-start gap-2 px-5 mt-5">
           <div className="w-1/3">
             <FlightFilters
